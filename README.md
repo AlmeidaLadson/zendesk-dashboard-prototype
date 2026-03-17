@@ -142,11 +142,17 @@ Destinada a **supervisores e gestores** que precisam de uma visão analítica da
 | Tempo médio resolução | Média em horas desde abertura até resolução |
 | Reabertos | Tickets que voltaram de solved para open |
 | Sem agente (máx) | Pico de tickets não atribuídos no período |
+| Base de conhecimento | % de tickets resolvidos com resolução documentada (verde ≥ 70%, amarelo 40–69%, vermelho < 40%) |
 
 **Volume por Cliente:**
 - Barras horizontais com o volume de tickets abertos por organização
 - Clique em um cliente para **filtrar** todas as seções da página por aquela organização
 - Clique em "Limpar filtro" no header da seção para remover o filtro
+
+**Problemas recorrentes:**
+- Top 5 tags mais frequentes nos tickets resolvidos do período selecionado
+- Barra proporcional à frequência de cada tag
+- Tags com mais de 3 ocorrências são destacadas em vermelho com label "recorrente" — sinal de falha de produto, não de suporte
 
 **Tempo em Aberto:**
 - Distribuição dos tickets abertos em 4 faixas: < 4h, 4–24h, 1–3 dias, > 3 dias
@@ -157,7 +163,11 @@ Destinada a **supervisores e gestores** que precisam de uma visão analítica da
 - Contagem absoluta de tickets: dentro do prazo, em risco (< 2h) e violados
 
 **Desempenho da Equipe:**
-- Tabela por agente: tickets resolvidos no período, tempo médio de 1ª resposta e ticket mais antigo em aberto
+- Tabela por agente com quatro colunas:
+  - **Resolvidos no período** — contagem de tickets fechados pelo agente
+  - **Tempo médio resolução** — média de horas entre abertura e fechamento dos tickets do agente no período (ex: `3.2h`)
+  - **Tempo médio 1ª resp** — tempo médio até a primeira resposta
+  - **Ticket mais antigo em aberto** — age do ticket mais antigo ainda na fila do agente
 
 **Tickets Críticos:**
 - Lista completa de tickets abertos com filtros rápidos: Todos, SLA em risco, SLA violado, Sem agente, Mais de 3 dias
