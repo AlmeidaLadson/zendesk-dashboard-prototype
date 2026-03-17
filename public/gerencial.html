@@ -85,6 +85,11 @@
       <div id="kpi-unassigned" class="kpi-value">—</div>
       <div class="kpi-sub">Pico no período</div>
     </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Base de conhecimento</div>
+      <div id="kpi-kb" class="kpi-value">—</div>
+      <div class="kpi-sub">Com resolução documentada</div>
+    </div>
   </div>
 
   <!-- VOLUME POR CLIENTE -->
@@ -95,6 +100,17 @@
     </div>
     <div class="card-body">
       <div id="client-volume"></div>
+    </div>
+  </div>
+
+  <!-- PROBLEMAS RECORRENTES -->
+  <div class="card mb-1 mt-1">
+    <div class="card-header">
+      <h2>Problemas recorrentes</h2>
+      <span style="font-size:0.78rem;color:var(--muted);">Tags mais frequentes nos tickets resolvidos</span>
+    </div>
+    <div class="card-body">
+      <div id="recurring-tags"></div>
     </div>
   </div>
 
@@ -121,6 +137,7 @@
           <tr>
             <th>Agente</th>
             <th>Resolvidos no período</th>
+            <th>Tempo médio resolução</th>
             <th>Tempo médio 1ª resp</th>
             <th>Ticket mais antigo em aberto</th>
           </tr>
@@ -266,6 +283,12 @@ function renderKPIs(kpis, solvedPeriod) {
   document.getElementById('kpi-reopened').textContent   = kpis.reopened || 0;
   document.getElementById('kpi-unassigned').textContent = kpis.unassigned;
 
+  const withResolution = solvedPeriod.filter(t => t.resolution && t.resolution.trim()).length;
+  const kbPct = solvedPeriod.length > 0 ? Math.round((withResolution / solvedPeriod.length) * 100) : null;
+  const kbEl = document.getElementById('kpi-kb');
+  kbEl.textContent = kbPct != null ? kbPct + '%' : '—';
+  kbEl.className = 'kpi-value' + (kbPct == null ? '' : kbPct >= 70 ? ' ok' : kbPct >= 40 ? ' warn' : ' danger');
+
   const avgRes = solvedPeriod.reduce((acc, t) => {
     const created = new Date(t.created_at || t.solved_at).getTime();
     const solved  = new Date(t.updated_at  || t.solved_at).getTime();
@@ -390,7 +413,7 @@ function renderTeamPerformance(agents, tickets, solved) {
   const body = document.getElementById('perf-body');
 
   if (!agents.length) {
-    body.innerHTML = '<tr><td colspan="4" class="empty-state">Sem dados de agentes.</td></tr>';
+    body.innerHTML = '<tr><td colspan="5" class="empty-state">Sem dados de agentes.</td></tr>';
     return;
   }
 
@@ -398,6 +421,18 @@ function renderTeamPerformance(agents, tickets, solved) {
     const resolvedByAgent = solved.filter(t => t.assignee_id === agent.id || t.agent_name === agent.name);
     const openByAgent = tickets.filter(t => t.assignee_id === agent.id);
     const oldest = openByAgent.sort((a, b) => new Date(a.created_at) - new Date(b.created_at))[0];
+
+    // Tempo médio de resolução calculado a partir de created_at → updated_at
+    let avgResHtml = '<span class="text-muted">—</span>';
+    if (resolvedByAgent.length > 0) {
+      const totalH = resolvedByAgent.reduce((acc, t) => {
+        const created = new Date(t.created_at || t.solved_at).getTime();
+        const updated = new Date(t.updated_at  || t.solved_at).getTime();
+        return acc + (updated - created) / 3600000;
+      }, 0);
+      const avg = Math.round((totalH / resolvedByAgent.length) * 10) / 10;
+      avgResHtml = `<span class="font-mono">${avg}h</span>`;
+    }
 
     // Tempo médio de 1ª resposta (simulado — em produção viria da API)
     const avgReply = agent.id === 101 ? '32min' : agent.id === 102 ? '51min' : '44min';
@@ -415,9 +450,45 @@ function renderTeamPerformance(agents, tickets, solved) {
           </div>
         </td>
         <td><span class="font-mono">${resolvedByAgent.length}</span></td>
+        <td>${avgResHtml}</td>
         <td><span class="font-mono">${avgReply}</span></td>
         <td>${oldestCell}</td>
       </tr>`;
+  }).join('');
+}
+
+/* ── Problemas recorrentes ────────────────────────────────────────────────── */
+function renderRecurringTags(solved) {
+  const container = document.getElementById('recurring-tags');
+  const counts = {};
+  solved.forEach(t => {
+    (t.tags || []).forEach(tag => { counts[tag] = (counts[tag] || 0) + 1; });
+  });
+
+  const sorted = Object.entries(counts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5);
+
+  if (!sorted.length) {
+    container.innerHTML = '<div class="empty-state">Nenhum dado no período.</div>';
+    return;
+  }
+
+  const max = sorted[0][1];
+  container.innerHTML = sorted.map(([tag, count]) => {
+    const pct = Math.round((count / max) * 100);
+    const isHigh = count > 3;
+    const barColor = isHigh ? 'var(--red)' : 'var(--blue)';
+    const countColor = isHigh ? 'var(--red)' : 'var(--text)';
+    return `
+      <div class="client-bar-item" style="cursor:default;">
+        <span class="client-name" style="${isHigh ? 'color:var(--red);font-weight:600;' : ''}">${escHtml(tag)}</span>
+        <div class="client-bar-track">
+          <div class="client-bar-fill" style="width:${pct}%;background:${barColor};"></div>
+        </div>
+        <span class="client-count" style="color:${countColor};font-weight:${isHigh ? '700' : '400'};">${count}</span>
+        ${isHigh ? '<span style="font-size:0.72rem;color:var(--red);flex-shrink:0;margin-left:0.25rem;">recorrente</span>' : '<span style="width:5.5rem;flex-shrink:0;"></span>'}
+      </div>`;
   }).join('');
 }
 
@@ -508,6 +579,7 @@ function renderAll() {
   const solvedPeriod = filterByPeriod(solvedBase, period);
 
   renderClientVolume(openTickets); // barras sempre com total
+  renderRecurringTags(filterByPeriod(solvedBase, period));
   renderTimeDistribution(filtered);
   renderSLAStatus(filtered);
   renderCriticalTickets(openTickets);
@@ -547,6 +619,7 @@ async function loadAll() {
 
     renderKPIs(kpisData, solvedPeriod);
     renderClientVolume(openTickets);
+    renderRecurringTags(solvedPeriod);
     renderTimeDistribution(openTickets);
     renderSLAStatus(openTickets);
     renderTeamPerformance(agentsData, openTickets, solvedPeriod);
