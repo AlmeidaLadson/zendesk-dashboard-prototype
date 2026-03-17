@@ -18,7 +18,6 @@ const HEADERS = { 'Authorization': AUTH, 'Content-Type': 'application/json' };
 
 const CACHE_TTL = (parseInt(process.env.REFRESH_INTERVAL_MINUTES) || 5) * 60 * 1000;
 const SOLVED_TTL = 30 * 60 * 1000;
-const RESOLUTION_FIELD_ID = parseInt(process.env.ZENDESK_RESOLUTION_FIELD_ID) || null;
 
 // Cache em memória
 const cache = {
@@ -56,29 +55,23 @@ function errorMessage(err) {
   return `Erro ao buscar dados: ${err.message}`;
 }
 
-// ─── Construção da base de resoluções (cascata 3 camadas) ───────────────────
+// ─── Construção da base de resoluções (cascata 2 camadas) ───────────────────
 
 async function fetchResolutionForTicket(ticket, agentIds) {
-  // Camada 1: campo customizado
-  if (RESOLUTION_FIELD_ID) {
-    const field = (ticket.custom_fields || []).find(f => f.id === RESOLUTION_FIELD_ID);
-    if (field && field.value && field.value.trim()) {
-      return field.value.trim();
-    }
-  } else {
-    // sem FIELD_ID configurado — tenta qualquer campo não nulo
-    const field = (ticket.custom_fields || []).find(f => f.value && String(f.value).trim());
-    if (field) return String(field.value).trim();
-  }
-
-  // Camada 2: último comentário público do agente
   try {
     const data = await fetchZendesk(`/tickets/${ticket.id}/comments`);
-    const agentComments = (data.comments || []).filter(
-      c => c.public && agentIds.has(c.author_id)
-    );
-    if (agentComments.length > 0) {
-      return agentComments[agentComments.length - 1].body;
+    const comments = data.comments || [];
+
+    // Camada 1: última nota interna do agente (public: false)
+    const internalNotes = comments.filter(c => !c.public && agentIds.has(c.author_id));
+    if (internalNotes.length > 0) {
+      return internalNotes[internalNotes.length - 1].body;
+    }
+
+    // Camada 2: último comentário público do agente (fallback)
+    const publicComments = comments.filter(c => c.public && agentIds.has(c.author_id));
+    if (publicComments.length > 0) {
+      return publicComments[publicComments.length - 1].body;
     }
   } catch (_) { /* silencioso */ }
 
@@ -92,8 +85,19 @@ async function buildResolutionDB() {
   if (MOCK_MODE) {
     const mock = getMockData();
     resolutionDB.data = mock.solvedTickets.map(t => {
-      const field = (t.custom_fields || []).find(f => f.value && String(f.value).trim());
-      const resolution = field ? String(field.value).trim() : null;
+      const ticketComments = mock.comments[t.id] || [];
+      const agentIds = new Set(mock.agents.map(a => a.id));
+
+      // Camada 1: última nota interna do agente
+      const internalNotes = ticketComments.filter(c => !c.public && agentIds.has(c.author_id));
+      // Camada 2: último comentário público do agente
+      const publicComments = ticketComments.filter(c => c.public && agentIds.has(c.author_id));
+      const resolution = internalNotes.length > 0
+        ? internalNotes[internalNotes.length - 1].body
+        : publicComments.length > 0
+          ? publicComments[publicComments.length - 1].body
+          : null;
+
       const agent = mock.agents.find(a => a.id === t.assignee_id);
       return {
         id: t.id,

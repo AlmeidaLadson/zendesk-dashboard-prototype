@@ -228,10 +228,6 @@ const SOLVED_TICKETS = [
     created_at: daysAgo(60),
     updated_at: daysAgo(59),
     via: { channel: 'email' },
-    custom_fields: [{
-      id: 99001,
-      value: 'Rodar script ALTER_P_CALCULAR_INDICES.sql no banco do cliente. Corrige a procedure de cálculo para usar o turno em vez do dia inteiro. Validar no relatório de OEE após rodar o agente.'
-    }]
   },
   {
     id: 470708,
@@ -244,10 +240,6 @@ const SOLVED_TICKETS = [
     created_at: daysAgo(32),
     updated_at: daysAgo(31),
     via: { channel: 'phone' },
-    custom_fields: [{
-      id: 99001,
-      value: 'Reiniciar serviços na AWS afetada. Aumentar o intervalo de execução do serviço de relatórios que estava consumindo recurso em loop. Migrar agentes para AWS alternativa enquanto o problema persiste. Abrir card no Azure DevOps para investigação de longo prazo.'
-    }]
   },
   {
     id: 468762,
@@ -260,10 +252,6 @@ const SOLVED_TICKETS = [
     created_at: daysAgo(90),
     updated_at: daysAgo(89),
     via: { channel: 'email' },
-    custom_fields: [{
-      id: 99001,
-      value: 'Comportamento esperado: não é possível alterar quantidade de ordem em execução via integração. Verificar logs de integração na pasta Backup no servidor. Orientar cliente a alterar somente quando a ordem não estiver em produção. Validar payload JSON da chamada de API.'
-    }]
   },
   {
     id: 467531,
@@ -276,10 +264,6 @@ const SOLVED_TICKETS = [
     created_at: daysAgo(45),
     updated_at: daysAgo(44),
     via: { channel: 'email' },
-    custom_fields: [{
-      id: 99001,
-      value: 'Rodar script de reset de estado: UPDATE MES.PRD SET CD_ESTADO = NULL WHERE DT_FIM IS NOT NULL AND CD_ESTADO = \'OCIOSA\'. Reiniciar o serviço de coletor após. Causa raiz: sinal de fim de turno chegou antes do coletor processar a última coleta.'
-    }]
   },
   {
     id: 466240,
@@ -292,10 +276,6 @@ const SOLVED_TICKETS = [
     created_at: daysAgo(20),
     updated_at: daysAgo(19),
     via: { channel: 'web' },
-    custom_fields: [{
-      id: 99001,
-      value: 'O campo QT_DEFEITOS estava nulo para inspeções criadas com template antigo. Rodar: UPDATE MES.INSP SET QT_DEFEITOS = 0 WHERE QT_DEFEITOS IS NULL AND DT_INSPECAO > \'2025-01-01\'. Solicitar ao cliente preencher campo ao criar inspeção.'
-    }]
   },
   {
     id: 465189,
@@ -308,10 +288,6 @@ const SOLVED_TICKETS = [
     created_at: daysAgo(15),
     updated_at: daysAgo(14),
     via: { channel: 'email' },
-    custom_fields: [{
-      id: 99001,
-      value: 'Script de atualização falhou porque o servidor SQL do cliente usa vírgula como separador decimal (pt-BR). Corrigir o script trocando ponto por vírgula nos valores numéricos: REPLACE(script, \'.\', \',\'). Reexecutar com SET DECIMAL_SEPARATOR = \',\'.'
-    }]
   },
   {
     id: 464078,
@@ -324,10 +300,6 @@ const SOLVED_TICKETS = [
     created_at: daysAgo(28),
     updated_at: daysAgo(27),
     via: { channel: 'phone' },
-    custom_fields: [{
-      id: 99001,
-      value: 'A procedure P_FECHAR_TURNO fazia full scan na tabela MES.PRD sem usar índice. Criar índice: CREATE INDEX IX_PRD_TURNO ON MES.PRD (CD_TURNO, DT_INICIO). Tempo de fechamento reduziu de 45s para 2s após criação do índice.'
-    }]
   },
   {
     id: 463019,
@@ -340,10 +312,6 @@ const SOLVED_TICKETS = [
     created_at: daysAgo(10),
     updated_at: daysAgo(9),
     via: { channel: 'email' },
-    custom_fields: [{
-      id: 99001,
-      value: 'Após restart do IIS, o Agente CEP perdia a conexão com o banco e ficava em loop de erro sem alertar. Solução: configurar reconexão automática no pool de conexões do IIS (MinPool=5, MaxPool=100, ConnectTimeout=30). Reiniciar o serviço SKA.Agente após reconfigurar.'
-    }]
   },
   {
     id: 461987,
@@ -356,10 +324,6 @@ const SOLVED_TICKETS = [
     created_at: daysAgo(55),
     updated_at: daysAgo(54),
     via: { channel: 'phone' },
-    custom_fields: [{
-      id: 99001,
-      value: 'Backup automático gerou arquivo .bak corrompido. Usar backup D-2 disponível. Executar RESTORE DATABASE MES FROM DISK = \'backup_d2.bak\' WITH REPLACE. Após restore, rodar scripts de migração pendentes em ordem: 001_fix.sql, 002_indices.sql. Validar integridade com DBCC CHECKDB.'
-    }]
   },
   {
     id: 460854,
@@ -372,10 +336,6 @@ const SOLVED_TICKETS = [
     created_at: daysAgo(18),
     updated_at: daysAgo(17),
     via: { channel: 'web' },
-    custom_fields: [{
-      id: 99001,
-      value: 'Cache do Viewer estava configurado com TTL de 2 horas. Dados do turno anterior permaneciam visíveis até expirar. Reduzir TTL para 15 minutos no arquivo de configuração do Viewer: viewer.config.json → "cacheTTL": 900. Reiniciar o serviço do Viewer para aplicar.'
-    }]
   },
   {
     id: 459741,
@@ -388,10 +348,6 @@ const SOLVED_TICKETS = [
     created_at: daysAgo(22),
     updated_at: daysAgo(21),
     via: { channel: 'email' },
-    custom_fields: [{
-      id: 99001,
-      value: 'Foreign key na tabela MES.JUSTIFICATIVA_PARADA apontava para registro deletado em MES.TIPO_PARADA. INSERT falhava silenciosamente na UI. Rodar: INSERT INTO MES.TIPO_PARADA VALUES (999, \'LEGADO\', 1). Depois associar as justificativas órfãs ao novo tipo. Abrir bug no Azure DevOps para tratar a cascata de delete.'
-    }]
   },
   {
     id: 458632,
@@ -404,10 +360,6 @@ const SOLVED_TICKETS = [
     created_at: daysAgo(35),
     updated_at: daysAgo(34),
     via: { channel: 'email' },
-    custom_fields: [{
-      id: 99001,
-      value: 'Certificado SSL do servidor MES expirou. O Agente CEP usa HTTPS para comunicação e começou a rejeitar a conexão. Solicitar à TI do cliente renovar o certificado via IIS Manager → Bindings → Edit → Select Certificate. Enquanto isso, configurar exceção temporária no agente: "skipCertValidation": true (APENAS temporário).'
-    }]
   },
   {
     id: 457521,
@@ -420,10 +372,6 @@ const SOLVED_TICKETS = [
     created_at: daysAgo(12),
     updated_at: daysAgo(11),
     via: { channel: 'email' },
-    custom_fields: [{
-      id: 99001,
-      value: 'Rotação de credenciais AWS revogou as permissões IAM do usuário de serviço do DirectaMES. Solicitar à TI reatribuir política AmazonEC2FullAccess e AmazonRDSFullAccess ao usuário svc-directames. Atualizar as chaves no arquivo de configuração do servidor: appsettings.json → AWSAccessKey e AWSSecretKey.'
-    }]
   },
   {
     id: 456418,
@@ -436,10 +384,6 @@ const SOLVED_TICKETS = [
     created_at: daysAgo(8),
     updated_at: daysAgo(7),
     via: { channel: 'web' },
-    custom_fields: [{
-      id: 99001,
-      value: 'Suite estava na versão 2.55 mas o Agente CEP estava na 2.52. Incompatibilidade causava falha silenciosa no cálculo de indicadores. Atualizar o Agente para a mesma versão da Suite: baixar SKA.Agente.2.55.zip do repositório, parar serviço, substituir binários, iniciar serviço. Sempre atualizar Suite e Agente juntos.'
-    }]
   },
   {
     id: 455307,
@@ -452,23 +396,87 @@ const SOLVED_TICKETS = [
     created_at: daysAgo(25),
     updated_at: daysAgo(24),
     via: { channel: 'phone' },
-    custom_fields: [{
-      id: 99001,
-      value: 'O ponto de controle estava associado ao turno errado (noturno em vez de diurno). OEE ficava zerado durante o turno diurno pois o sistema buscava dados do turno incorreto. Acessar Configurações → Pontos de Controle → editar o ponto → associar ao CD_TURNO correto. Reiniciar o agente após alterar.'
-    }]
   },
 ];
 
-// Comentários para tickets resolvidos (camada 2 - fallback)
+// Comentários para tickets resolvidos
+// Padrão: comentário público com resposta educada ao cliente + nota interna com detalhe técnico
 const SOLVED_COMMENTS = {
   471123: [
-    { id: 100, author_id: 201, public: true, body: 'O OEE está mostrando valores errados, parece estar calculando o dia inteiro ao invés do turno.', created_at: daysAgo(61) },
-    { id: 101, author_id: 101, public: true, body: 'Identificamos o problema na procedure de cálculo. Vou rodar o script ALTER_P_CALCULAR_INDICES.sql para corrigir. Após isso, valide no relatório de OEE.', created_at: daysAgo(60) },
-    { id: 102, author_id: 201, public: true, body: 'Funcionou! OEE agora mostra corretamente por turno.', created_at: daysAgo(59) },
+    { id: 100, author_id: 201, public: true,  body: 'O OEE está mostrando valores errados, parece estar calculando o dia inteiro ao invés do turno.', created_at: daysAgo(61) },
+    { id: 101, author_id: 101, public: true,  body: 'Problema identificado e corrigido. Sistema operando normalmente.', created_at: daysAgo(60) },
+    { id: 102, author_id: 101, public: false, body: 'Procedure P_CALCULAR_INDICES estava usando DT_ABERTURA do dia inteiro em vez de CD_TURNO. Rodado script ALTER_P_CALCULAR_INDICES.sql no banco do cliente. Validado no relatório de OEE após rodar o agente — valores por turno corretos.', created_at: daysAgo(60) },
+    { id: 103, author_id: 201, public: true,  body: 'Funcionou! OEE agora mostra corretamente por turno.', created_at: daysAgo(59) },
   ],
   470708: [
-    { id: 103, author_id: 203, public: true, body: 'Sistema extremamente lento, CPU da AWS em 100%.', created_at: daysAgo(32) },
-    { id: 104, author_id: 102, public: true, body: 'Reiniciamos os serviços e ajustamos o intervalo do serviço de relatórios. Migramos os agentes para a AWS secundária. Criamos card no Azure DevOps #4521 para investigação definitiva.', created_at: daysAgo(31) },
+    { id: 104, author_id: 203, public: true,  body: 'Sistema extremamente lento, CPU da AWS em 100%.', created_at: daysAgo(32) },
+    { id: 105, author_id: 102, public: true,  body: 'Problema identificado e corrigido. Sistema operando normalmente.', created_at: daysAgo(31) },
+    { id: 106, author_id: 102, public: false, body: 'Serviço de relatórios estava executando em loop sem intervalo de espera, consumindo 100% de CPU. Reiniciados os serviços na AWS afetada. Aumentado o intervalo de execução do job de relatórios de 0s para 300s no appsettings.json. Agentes migrados para AWS secundária (eu-west-1) enquanto a principal se estabiliza. Card Azure DevOps #4521 aberto para investigação de longo prazo.', created_at: daysAgo(31) },
+  ],
+  468762: [
+    { id: 107, author_id: 202, public: true,  body: 'A quantidade da ordem de produção não atualiza via integração.', created_at: daysAgo(91) },
+    { id: 108, author_id: 101, public: true,  body: 'Comportamento verificado e orientação enviada. Chamado encerrado.', created_at: daysAgo(89) },
+    { id: 109, author_id: 101, public: false, body: 'Comportamento esperado por design: não é possível alterar quantidade de ordem em execução via integração JSON. Verificados logs de integração na pasta Backup no servidor — payload correto, porém ordem já estava em produção. Orientado cliente a alterar somente quando a ordem não estiver em execução. Validado payload JSON da chamada de API com cliente.', created_at: daysAgo(89) },
+  ],
+  467531: [
+    { id: 110, author_id: 204, public: true,  body: 'Estado da máquina travado em "Ociosa" após fim de turno.', created_at: daysAgo(46) },
+    { id: 111, author_id: 103, public: true,  body: 'Problema identificado e corrigido. Sistema operando normalmente.', created_at: daysAgo(44) },
+    { id: 112, author_id: 103, public: false, body: 'Causa raiz: sinal de fim de turno chegou antes do coletor processar a última coleta, deixando o registro em estado OCIOSA sem DT_FIM. Rodado script de reset: UPDATE MES.PRD SET CD_ESTADO = NULL WHERE DT_FIM IS NOT NULL AND CD_ESTADO = \'OCIOSA\'. Reiniciado serviço do coletor após. Estados normalizados.', created_at: daysAgo(44) },
+  ],
+  466240: [
+    { id: 113, author_id: 205, public: true,  body: 'Inspeção CEP com NULL na contagem de defeitos.', created_at: daysAgo(21) },
+    { id: 114, author_id: 102, public: true,  body: 'Problema identificado e corrigido. Sistema operando normalmente.', created_at: daysAgo(19) },
+    { id: 115, author_id: 102, public: false, body: 'Campo QT_DEFEITOS estava nulo para inspeções criadas com template anterior à versão 2.50. Rodado: UPDATE MES.INSP SET QT_DEFEITOS = 0 WHERE QT_DEFEITOS IS NULL AND DT_INSPECAO > \'2025-01-01\'. Total de 47 registros corrigidos. Orientado cliente a preencher o campo ao criar inspeção via novo template.', created_at: daysAgo(19) },
+  ],
+  465189: [
+    { id: 116, author_id: 206, public: true,  body: 'Erro ao executar script SQL — separador decimal.', created_at: daysAgo(16) },
+    { id: 117, author_id: 101, public: true,  body: 'Problema identificado e corrigido. Script reexecutado com sucesso.', created_at: daysAgo(14) },
+    { id: 118, author_id: 101, public: false, body: 'Script de atualização usava ponto como separador decimal, mas o SQL Server do cliente está configurado com locale pt-BR (vírgula). Corrigido o script substituindo ponto por vírgula nos valores numéricos. Reexecutado com SET LANGUAGE Brazilian antes do bloco. Validado resultado nas tabelas afetadas.', created_at: daysAgo(14) },
+  ],
+  464078: [
+    { id: 119, author_id: 207, public: true,  body: 'Lentidão intensa durante a troca de turno.', created_at: daysAgo(29) },
+    { id: 120, author_id: 103, public: true,  body: 'Problema identificado e corrigido. Tempo de troca de turno normalizado.', created_at: daysAgo(27) },
+    { id: 121, author_id: 103, public: false, body: 'Procedure P_FECHAR_TURNO fazia full scan na tabela MES.PRD (>2M linhas) sem usar índice na coluna CD_TURNO. Criado índice: CREATE INDEX IX_PRD_TURNO ON MES.PRD (CD_TURNO, DT_INICIO). Tempo de fechamento de turno reduziu de 45s para 2s. Monitorado por dois ciclos de troca consecutivos sem recorrência.', created_at: daysAgo(27) },
+  ],
+  463019: [
+    { id: 122, author_id: 201, public: true,  body: 'Agente não atualiza indicadores após restart do IIS.', created_at: daysAgo(11) },
+    { id: 123, author_id: 102, public: true,  body: 'Problema identificado e corrigido. Agente operando normalmente após restart.', created_at: daysAgo(9) },
+    { id: 124, author_id: 102, public: false, body: 'Após restart do IIS o pool de conexões do Agente CEP não reconectava ao banco — ficava em loop de erro silencioso. Configurado reconexão automática no pool: MinPool=5, MaxPool=100, ConnectTimeout=30 no appsettings.json do IIS. Reiniciado o serviço SKA.Agente. Testado restart do IIS duas vezes — agente reconecta automaticamente em < 10s.', created_at: daysAgo(9) },
+  ],
+  461987: [
+    { id: 125, author_id: 202, public: true,  body: 'Backup de banco corrompido, sistema sem acesso aos dados.', created_at: daysAgo(56) },
+    { id: 126, author_id: 101, public: true,  body: 'Banco restaurado. Sistema operando normalmente.', created_at: daysAgo(54) },
+    { id: 127, author_id: 101, public: false, body: 'Backup automático gerou arquivo .bak corrompido (checksum inválido). Usado backup D-2 disponível no storage. Executado: RESTORE DATABASE MES FROM DISK = \'backup_d2.bak\' WITH REPLACE. Após restore, rodados scripts de migração pendentes em ordem: 001_fix.sql, 002_indices.sql. Validada integridade com DBCC CHECKDB — sem erros. Investigar e corrigir job de backup automático.', created_at: daysAgo(54) },
+  ],
+  460854: [
+    { id: 128, author_id: 203, public: true,  body: 'Viewer mostrando dados do turno anterior.', created_at: daysAgo(19) },
+    { id: 129, author_id: 103, public: true,  body: 'Problema identificado e corrigido. Viewer exibindo dados do turno atual.', created_at: daysAgo(17) },
+    { id: 130, author_id: 103, public: false, body: 'Cache do Viewer configurado com TTL de 7200s (2h). Dados do turno anterior permaneciam visíveis até expirar. Alterado TTL para 900s (15min) em viewer.config.json → "cacheTTL": 900. Reiniciado serviço do Viewer para aplicar. Verificada atualização correta em dois ciclos de troca de turno.', created_at: daysAgo(17) },
+  ],
+  459741: [
+    { id: 131, author_id: 204, public: true,  body: 'Erro ao justificar parada — sistema não aceita o registro.', created_at: daysAgo(23) },
+    { id: 132, author_id: 102, public: true,  body: 'Problema identificado e corrigido. Justificativas sendo registradas normalmente.', created_at: daysAgo(21) },
+    { id: 133, author_id: 102, public: false, body: 'Foreign key em MES.JUSTIFICATIVA_PARADA apontava para registro deletado em MES.TIPO_PARADA. INSERT falhava silenciosamente na UI sem mensagem de erro ao usuário. Solução: INSERT INTO MES.TIPO_PARADA VALUES (999, \'LEGADO\', 1). Associadas as justificativas órfãs ao novo tipo via UPDATE. Aberto bug #5102 no Azure DevOps para implementar cascata de delete corretamente.', created_at: daysAgo(21) },
+  ],
+  458632: [
+    { id: 134, author_id: 205, public: true,  body: 'Agente sem comunicação — certificado digital com problema.', created_at: daysAgo(36) },
+    { id: 135, author_id: 101, public: true,  body: 'Comunicação restabelecida. Agente operando normalmente.', created_at: daysAgo(34) },
+    { id: 136, author_id: 101, public: false, body: 'Certificado SSL do servidor MES expirou em 15/02. Agente CEP usa HTTPS e passou a rejeitar a conexão com erro de handshake. Solicitada renovação à TI do cliente via IIS Manager → Bindings → Edit → Select Certificate. Enquanto aguardava, configurada exceção temporária no agente: "skipCertValidation": true (TEMPORÁRIO — remover após renovação). Certificado renovado e exceção removida em seguida.', created_at: daysAgo(34) },
+  ],
+  457521: [
+    { id: 137, author_id: 206, public: true,  body: 'Acesso negado ao servidor AWS — sistema inacessível.', created_at: daysAgo(13) },
+    { id: 138, author_id: 103, public: true,  body: 'Acesso restabelecido. Sistema operando normalmente.', created_at: daysAgo(11) },
+    { id: 139, author_id: 103, public: false, body: 'Rotação automática de credenciais AWS revogou as permissões IAM do usuário de serviço svc-directames. Solicitada à TI reatribuição das políticas AmazonEC2FullAccess e AmazonRDSFullAccess. Atualizadas as chaves em appsettings.json → AWSAccessKey e AWSSecretKey. Configurar alerta de expiração de credenciais IAM para evitar recorrência.', created_at: daysAgo(11) },
+  ],
+  456418: [
+    { id: 140, author_id: 207, public: true,  body: 'Funcionalidades divergindo entre Suite e Agente.', created_at: daysAgo(9) },
+    { id: 141, author_id: 102, public: true,  body: 'Problema identificado e corrigido. Suite e Agente na mesma versão.', created_at: daysAgo(7) },
+    { id: 142, author_id: 102, public: false, body: 'Suite estava na versão 2.55 mas o Agente CEP estava na 2.52. Incompatibilidade de contrato de API causava falha silenciosa no cálculo de indicadores. Atualizado o Agente: baixado SKA.Agente.2.55.zip do repositório, parado serviço, substituídos binários, iniciado serviço. Adicionada nota na base de conhecimento: Suite e Agente devem ser sempre atualizados juntos.', created_at: daysAgo(7) },
+  ],
+  455307: [
+    { id: 143, author_id: 201, public: true,  body: 'OEE zerado durante o turno diurno.', created_at: daysAgo(26) },
+    { id: 144, author_id: 101, public: true,  body: 'Problema identificado e corrigido. OEE calculando corretamente.', created_at: daysAgo(24) },
+    { id: 145, author_id: 101, public: false, body: 'Ponto de controle estava associado ao CD_TURNO 3 (noturno) em vez do CD_TURNO 1 (diurno). OEE ficava zerado durante o turno diurno pois o sistema buscava dados do turno incorreto. Corrigido em: Configurações → Pontos de Controle → editar → CD_TURNO = 1. Reiniciado o agente após alteração. Validado OEE correto por dois turnos consecutivos.', created_at: daysAgo(24) },
   ],
 };
 
