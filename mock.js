@@ -10,7 +10,9 @@ const minutesAgo = (m) => new Date(Date.now() - m * 60000).toISOString();
 const AGENTS = [
   { id: 101, name: 'Lucas Almeida', email: 'lucas@ska.com.br' },
   { id: 102, name: 'Marina Souza',  email: 'marina@ska.com.br' },
-  { id: 103, name: 'Rafael Costa', email: 'rafael@ska.com.br' },
+  { id: 103, name: 'Rafael Costa',  email: 'rafael@ska.com.br' },
+  { id: 104, name: 'Ana Ferreira',  email: 'ana@ska.com.br' },
+  { id: 105, name: 'Carlos Mendes', email: 'carlos@ska.com.br' },
 ];
 
 // Comentários por ticket — usados como fallback de resolução (camada 2)
@@ -207,10 +209,200 @@ const OPEN_TICKETS = [
     created_at: hoursAgo(8),
     updated_at: hoursAgo(6),
     via: { channel: 'web' },
-    custom_fields: [{ id: 99001, value: null }],
     sla_policy: {
       policy_metrics: [
         { metric: 'first_reply_time', breach_at: minutesFromNow(480), stage: 'active' }
+      ]
+    }
+  },
+  // ── 10 novos tickets (total: 18) ──────────────────────────────────────────
+  {
+    id: 476001,
+    subject: 'Dashboard de OEE completamente em branco após deploy',
+    description: 'Após o deploy de hoje, o painel de OEE da linha 3 exibe apenas tela branca. Produção parada.',
+    status: 'open',
+    priority: 'urgent',
+    tags: ['oee', 'dashboard', 'deploy', 'altona'],
+    assignee_id: 104,
+    requester_id: 208,
+    organization_name: 'Altona',
+    created_at: hoursAgo(1.5),
+    updated_at: hoursAgo(0.5),
+    via: { channel: 'phone' },
+    sla_policy: {
+      policy_metrics: [
+        { metric: 'first_reply_time', breach_at: minutesAgo(15), stage: 'breached' }
+      ]
+    }
+  },
+  {
+    id: 476002,
+    subject: 'Agente CEP travado — sem coleta há 6 horas',
+    description: 'O serviço SKA.Agente está rodando (processo visível) mas não está coletando dados. Indicadores de produção parados.',
+    status: 'open',
+    priority: 'urgent',
+    tags: ['agente', 'coletor', 'travado', 'bundy'],
+    assignee_id: null,
+    requester_id: 209,
+    organization_name: 'Bundy',
+    created_at: hoursAgo(6.5),
+    updated_at: hoursAgo(1),
+    via: { channel: 'email' },
+    sla_policy: {
+      policy_metrics: [
+        { metric: 'first_reply_time', breach_at: minutesAgo(90), stage: 'breached' }
+      ]
+    }
+  },
+  {
+    id: 476003,
+    subject: 'Integração ERP retornando erro 401 — ordens não importam',
+    description: 'A integração com o ERP parou de importar ordens de produção. Log mostra HTTP 401 desde as 08h.',
+    status: 'open',
+    priority: 'high',
+    tags: ['integracao', 'erp', 'autenticacao', 'cremer'],
+    assignee_id: 105,
+    requester_id: 210,
+    organization_name: 'Cremer',
+    created_at: hoursAgo(14),
+    updated_at: hoursAgo(8),
+    via: { channel: 'email' },
+    sla_policy: {
+      policy_metrics: [
+        { metric: 'first_reply_time', breach_at: minutesFromNow(60), stage: 'active' }
+      ]
+    }
+  },
+  {
+    id: 476004,
+    subject: 'Painel de TV do chão de fábrica mostrando turno errado',
+    description: 'O Viewer da linha 2 exibe dados do turno noturno durante o turno diurno. Operadores confusos.',
+    status: 'open',
+    priority: 'high',
+    tags: ['viewer', 'turno', 'tv', 'ge'],
+    assignee_id: 102,
+    requester_id: 211,
+    organization_name: 'GE',
+    created_at: hoursAgo(9),
+    updated_at: hoursAgo(4),
+    via: { channel: 'web' },
+    sla_policy: {
+      policy_metrics: [
+        { metric: 'first_reply_time', breach_at: minutesFromNow(120), stage: 'active' }
+      ]
+    }
+  },
+  {
+    id: 476005,
+    subject: 'Relatório de eficiência sem dados do dia anterior',
+    description: 'O relatório diário gerado hoje não tem dados de ontem. O campo "Eficiência %" aparece vazio.',
+    status: 'open',
+    priority: 'normal',
+    tags: ['relatorio', 'eficiencia', 'dados', 'signode'],
+    assignee_id: null,
+    requester_id: 212,
+    organization_name: 'Signode',
+    created_at: hoursAgo(20),
+    updated_at: hoursAgo(10),
+    via: { channel: 'email' },
+    sla_policy: {
+      policy_metrics: [
+        { metric: 'first_reply_time', breach_at: minutesFromNow(200), stage: 'active' }
+      ]
+    }
+  },
+  {
+    id: 476006,
+    subject: 'Alarme de parada não dispara notificação por e-mail',
+    description: 'Configuramos o alarme de parada >30min para enviar e-mail, mas as notificações não chegam.',
+    status: 'open',
+    priority: 'normal',
+    tags: ['alarme', 'notificacao', 'email', 'franklin_join'],
+    assignee_id: 103,
+    requester_id: 213,
+    organization_name: 'Franklin Join',
+    created_at: daysAgo(1.5),
+    updated_at: daysAgo(1),
+    via: { channel: 'email' },
+    sla_policy: {
+      policy_metrics: [
+        { metric: 'first_reply_time', breach_at: minutesFromNow(350), stage: 'active' }
+      ]
+    }
+  },
+  {
+    id: 476007,
+    subject: 'Exportação CSV com encoding incorreto — caracteres especiais',
+    description: 'Ao exportar relatório para CSV, caracteres com acento aparecem como ???. Arquivo corrompido no Excel.',
+    status: 'open',
+    priority: 'normal',
+    tags: ['exportacao', 'csv', 'encoding', 'neoortho'],
+    assignee_id: 105,
+    requester_id: 214,
+    organization_name: 'Neoortho',
+    created_at: hoursAgo(11),
+    updated_at: hoursAgo(5),
+    via: { channel: 'web' },
+    sla_policy: {
+      policy_metrics: [
+        { metric: 'first_reply_time', breach_at: minutesFromNow(270), stage: 'active' }
+      ]
+    }
+  },
+  {
+    id: 476008,
+    subject: 'Sincronização de ordens de produção com 4 horas de atraso',
+    description: 'As ordens do ERP chegam no DirectaMES com atraso de ~4h. Afeta o planejamento do turno.',
+    status: 'open',
+    priority: 'normal',
+    tags: ['sincronizacao', 'ordem', 'integracao', 'flexicotton'],
+    assignee_id: 104,
+    requester_id: 215,
+    organization_name: 'Flexicotton',
+    created_at: daysAgo(2),
+    updated_at: daysAgo(1),
+    via: { channel: 'email' },
+    sla_policy: {
+      policy_metrics: [
+        { metric: 'first_reply_time', breach_at: minutesFromNow(500), stage: 'active' }
+      ]
+    }
+  },
+  {
+    id: 476009,
+    subject: 'Ajuste de fuso horário no servidor de relatórios',
+    description: 'Servidor de relatórios está em UTC mas deveria estar em America/Sao_Paulo. Causa diferença de 3h nos timestamps.',
+    status: 'open',
+    priority: 'low',
+    tags: ['timezone', 'servidor', 'relatorio', 'altona'],
+    assignee_id: 101,
+    requester_id: 216,
+    organization_name: 'Altona',
+    created_at: daysAgo(5),
+    updated_at: daysAgo(4),
+    via: { channel: 'email' },
+    sla_policy: {
+      policy_metrics: [
+        { metric: 'first_reply_time', breach_at: minutesFromNow(720), stage: 'active' }
+      ]
+    }
+  },
+  {
+    id: 476010,
+    subject: 'Troca de logo na tela de login do Viewer',
+    description: 'Cliente solicitou atualização do logotipo exibido na tela de login do Viewer. Logo nova enviada por e-mail.',
+    status: 'open',
+    priority: 'low',
+    tags: ['viewer', 'logo', 'configuracao', 'ge'],
+    assignee_id: null,
+    requester_id: 217,
+    organization_name: 'GE',
+    created_at: daysAgo(3.5),
+    updated_at: daysAgo(3),
+    via: { channel: 'email' },
+    sla_policy: {
+      policy_metrics: [
+        { metric: 'first_reply_time', breach_at: minutesFromNow(1440), stage: 'active' }
       ]
     }
   },
@@ -397,6 +589,127 @@ const SOLVED_TICKETS = [
     updated_at: daysAgo(24),
     via: { channel: 'phone' },
   },
+  // ── 15 novos tickets resolvidos (total: 30) ───────────────────────────────
+  {
+    id: 454100,
+    subject: 'Etapa de produção não avança automaticamente',
+    status: 'solved', priority: 'high',
+    tags: ['etapa', 'producao', 'workflow', 'neoortho'],
+    assignee_id: 104, organization_name: 'Neoortho',
+    created_at: daysAgo(5), updated_at: daysAgo(4), via: { channel: 'email' },
+  },
+  {
+    id: 453088,
+    subject: 'OEE zerado — ponto de controle sem máquina associada',
+    status: 'solved', priority: 'urgent',
+    tags: ['oee', 'ponto_controle', 'maquina', 'franklin_join'],
+    assignee_id: 101, organization_name: 'Franklin Join',
+    created_at: daysAgo(38), updated_at: daysAgo(37), via: { channel: 'phone' },
+  },
+  {
+    id: 452077,
+    subject: 'Turno noturno não fecha — procedure P_FECHAR_TURNO com erro',
+    status: 'solved', priority: 'high',
+    tags: ['turno', 'procedure', 'sql', 'altona'],
+    assignee_id: 103, organization_name: 'Altona',
+    created_at: daysAgo(18), updated_at: daysAgo(17), via: { channel: 'email' },
+  },
+  {
+    id: 451066,
+    subject: 'Lentidão no Viewer TV — múltiplas abas abertas no browser',
+    status: 'solved', priority: 'normal',
+    tags: ['viewer', 'lentidao', 'browser', 'cremer'],
+    assignee_id: 102, organization_name: 'Cremer',
+    created_at: daysAgo(42), updated_at: daysAgo(41), via: { channel: 'web' },
+  },
+  {
+    id: 450055,
+    subject: 'Banco SQL Server sem espaço em disco — coleta parou',
+    status: 'solved', priority: 'urgent',
+    tags: ['banco', 'sql', 'disco', 'servidor', 'flexicotton'],
+    assignee_id: 105, organization_name: 'Flexicotton',
+    created_at: daysAgo(50), updated_at: daysAgo(49), via: { channel: 'phone' },
+  },
+  {
+    id: 449044,
+    subject: 'Agente CEP com versão incompatível após atualização da suite',
+    status: 'solved', priority: 'high',
+    tags: ['agente', 'suite', 'versao', 'incompatibilidade', 'bundy'],
+    assignee_id: 101, organization_name: 'Bundy',
+    created_at: daysAgo(65), updated_at: daysAgo(64), via: { channel: 'email' },
+  },
+  {
+    id: 448033,
+    subject: 'Integração JSON — campo "qtd" com tipo errado causando falha',
+    status: 'solved', priority: 'normal',
+    tags: ['integracao', 'json', 'tipo', 'ge'],
+    assignee_id: 104, organization_name: 'GE',
+    created_at: daysAgo(72), updated_at: daysAgo(71), via: { channel: 'email' },
+  },
+  {
+    id: 447022,
+    subject: 'Coletor desconecta do MES toda vez que o IIS reinicia',
+    status: 'solved', priority: 'high',
+    tags: ['coletor', 'iis', 'conexao', 'reconexao', 'altona'],
+    assignee_id: 103, organization_name: 'Altona',
+    created_at: daysAgo(30), updated_at: daysAgo(29), via: { channel: 'email' },
+  },
+  {
+    id: 446011,
+    subject: 'OEE de disponibilidade calculado em duplicidade por shift',
+    status: 'solved', priority: 'normal',
+    tags: ['oee', 'disponibilidade', 'calculo', 'turno', 'signode'],
+    assignee_id: 102, organization_name: 'Signode',
+    created_at: daysAgo(55), updated_at: daysAgo(54), via: { channel: 'web' },
+  },
+  {
+    id: 445000,
+    subject: 'Senha do usuário de serviço AWS expirou — painel offline',
+    status: 'solved', priority: 'urgent',
+    tags: ['aws', 'senha', 'servico', 'neoortho'],
+    assignee_id: 105, organization_name: 'Neoortho',
+    created_at: daysAgo(80), updated_at: daysAgo(79), via: { channel: 'phone' },
+  },
+  {
+    id: 443989,
+    subject: 'Etiqueta de produção imprimindo com dados do lote anterior',
+    status: 'solved', priority: 'normal',
+    tags: ['etiqueta', 'lote', 'impressao', 'cremer'],
+    assignee_id: 101, organization_name: 'Cremer',
+    created_at: daysAgo(48), updated_at: daysAgo(47), via: { channel: 'email' },
+  },
+  {
+    id: 442978,
+    subject: 'Viewer exibindo meta de OEE errada — campo não atualizado',
+    status: 'solved', priority: 'normal',
+    tags: ['viewer', 'oee', 'meta', 'franklin_join'],
+    assignee_id: 104, organization_name: 'Franklin Join',
+    created_at: daysAgo(15), updated_at: daysAgo(14), via: { channel: 'web' },
+  },
+  {
+    id: 441967,
+    subject: 'Índice de qualidade negativo — divisão por zero no cálculo',
+    status: 'solved', priority: 'high',
+    tags: ['qualidade', 'calculo', 'divisao_zero', 'sql', 'ge'],
+    assignee_id: 103, organization_name: 'GE',
+    created_at: daysAgo(88), updated_at: daysAgo(87), via: { channel: 'email' },
+  },
+  {
+    id: 440956,
+    subject: 'Serviço SKA.Relatorios não inicia após atualização Windows',
+    status: 'solved', priority: 'high',
+    tags: ['servico', 'windows', 'relatorio', 'flexicotton'],
+    assignee_id: 102, organization_name: 'Flexicotton',
+    created_at: daysAgo(22), updated_at: daysAgo(21), via: { channel: 'email' },
+  },
+  {
+    id: 439945,
+    subject: 'Inspeção CEP com data de validade retroativa — erro de validação',
+    status: 'solved', priority: 'normal',
+    tags: ['inspecao', 'cep', 'data', 'validacao', 'bundy'],
+    assignee_id: 105, organization_name: 'Bundy',
+    created_at: daysAgo(33), updated_at: daysAgo(32), via: { channel: 'web' },
+  },
 ];
 
 // Comentários para tickets resolvidos
@@ -477,6 +790,82 @@ const SOLVED_COMMENTS = {
     { id: 143, author_id: 201, public: true,  body: 'OEE zerado durante o turno diurno.', created_at: daysAgo(26) },
     { id: 144, author_id: 101, public: true,  body: 'Problema identificado e corrigido. OEE calculando corretamente.', created_at: daysAgo(24) },
     { id: 145, author_id: 101, public: false, body: 'Ponto de controle estava associado ao CD_TURNO 3 (noturno) em vez do CD_TURNO 1 (diurno). OEE ficava zerado durante o turno diurno pois o sistema buscava dados do turno incorreto. Corrigido em: Configurações → Pontos de Controle → editar → CD_TURNO = 1. Reiniciado o agente após alteração. Validado OEE correto por dois turnos consecutivos.', created_at: daysAgo(24) },
+  ],
+  // ── 15 novos tickets resolvidos ───────────────────────────────────────────
+  454100: [
+    { id: 146, author_id: 214, public: true,  body: 'A etapa de produção não avança automaticamente para a próxima após conclusão.', created_at: daysAgo(6) },
+    { id: 147, author_id: 104, public: true,  body: 'Problema identificado e corrigido. Etapas avançando automaticamente.', created_at: daysAgo(4) },
+    { id: 148, author_id: 104, public: false, body: 'Trigger T_AVANCAR_ETAPA estava desabilitada na tabela MES.ETAPA_PROD após script de migração 2.56. Reabilitada via: ENABLE TRIGGER T_AVANCAR_ETAPA ON MES.ETAPA_PROD. Validado fluxo completo com duas ordens de produção — etapas avançam corretamente ao atingir 100% de conclusão.', created_at: daysAgo(4) },
+  ],
+  453088: [
+    { id: 149, author_id: 202, public: true,  body: 'OEE zerado no ponto de controle da linha 1 — sem coleta desde ontem.', created_at: daysAgo(39) },
+    { id: 150, author_id: 101, public: true,  body: 'Problema identificado e corrigido. OEE calculando corretamente.', created_at: daysAgo(37) },
+    { id: 151, author_id: 101, public: false, body: 'Ponto de controle CD_PONTO = 12 estava sem máquina associada (FK_MAQUINA = NULL). Agente ignorava silenciosamente o ponto durante o cálculo. Corrigido: UPDATE MES.PONTO_CONTROLE SET FK_MAQUINA = 7 WHERE CD_PONTO = 12. Reiniciado agente após alteração. OEE calculando corretamente em dois ciclos consecutivos.', created_at: daysAgo(37) },
+  ],
+  452077: [
+    { id: 152, author_id: 208, public: true,  body: 'O turno noturno não fechou esta madrugada — procedure com erro no log.', created_at: daysAgo(19) },
+    { id: 153, author_id: 103, public: true,  body: 'Problema identificado e corrigido. Fechamento de turno operando normalmente.', created_at: daysAgo(17) },
+    { id: 154, author_id: 103, public: false, body: 'Procedure P_FECHAR_TURNO falhou com ARITHMETIC_OVERFLOW ao calcular eficiência de uma ordem com QT_PRODUZIDA = 0 e QT_META = 0 (divisão por zero). Adicionada guarda: CASE WHEN QT_META > 0 THEN QT_PRODUZIDA / QT_META ELSE 0 END no SELECT. Script rodado no banco do cliente. Fechamento de turno testado por 3 noites consecutivas sem erro.', created_at: daysAgo(17) },
+  ],
+  451066: [
+    { id: 155, author_id: 210, public: true,  body: 'O Viewer TV ficou lento ao ter várias abas abertas no browser — CPU do computador em 90%.', created_at: daysAgo(43) },
+    { id: 156, author_id: 102, public: true,  body: 'Comportamento verificado e orientação aplicada. Viewer operando normalmente.', created_at: daysAgo(41) },
+    { id: 157, author_id: 102, public: false, body: 'Cada aba do Viewer abria websocket independente com polling de 5s. Com 8 abas abertas, totalizava 8 conexões simultâneas ao servidor MES. Orientado operador a usar no máximo 2 abas. Configurado SharedWorker no viewer.config.json → "useSharedWS": true para compartilhar conexão entre abas do mesmo browser. CPU caiu de 90% para 18% após configuração.', created_at: daysAgo(41) },
+  ],
+  450055: [
+    { id: 158, author_id: 215, public: true,  body: 'Sistema parou de coletar dados — banco SQL Server sem espaço em disco.', created_at: daysAgo(51) },
+    { id: 159, author_id: 105, public: true,  body: 'Espaço em disco liberado. Coleta de dados retomada.', created_at: daysAgo(49) },
+    { id: 160, author_id: 105, public: false, body: 'Disco D: (onde reside o MDF do banco) estava com 0 MB livres. Causas: logs de transação não truncados (crescimento irrestrito) + backup .bak antigos acumulados. Ações: 1) Deletados backups com mais de 30 dias (liberados 42 GB). 2) Executado DBCC SHRINKFILE nos logs: DBCC SHRINKFILE(MES_log, 1024). 3) Configurado job de limpeza automática semanal de backups. Coleta retomada em 5 minutos após liberação.', created_at: daysAgo(49) },
+  ],
+  449044: [
+    { id: 161, author_id: 209, public: true,  body: 'Agente CEP com erro após atualização da suite — versão incompatível.', created_at: daysAgo(66) },
+    { id: 162, author_id: 101, public: true,  body: 'Problema identificado e corrigido. Agente e suite na mesma versão.', created_at: daysAgo(64) },
+    { id: 163, author_id: 101, public: false, body: 'Suite foi atualizada para 2.57 mas o Agente CEP permaneceu em 2.54. API de coleta mudou o contrato de retorno dos indicadores na versão 2.56 — campo "rendimento" renomeado para "performance". Atualizado Agente: parado SKA.Agente, substituídos binários por SKA.Agente.2.57.zip, reiniciado serviço. Documentado no runbook: Suite e Agente devem ser atualizados na mesma janela.', created_at: daysAgo(64) },
+  ],
+  448033: [
+    { id: 164, author_id: 211, public: true,  body: 'Integração JSON para importar ordens falha — campo "qtd" com tipo errado.', created_at: daysAgo(73) },
+    { id: 165, author_id: 104, public: true,  body: 'Problema identificado e corrigido. Ordens importando corretamente.', created_at: daysAgo(71) },
+    { id: 166, author_id: 104, public: false, body: 'ERP enviava o campo "qtd" como string ("100") em vez de número (100). Validação do endpoint /api/ordens fazia type check estrito e rejeitava o payload com HTTP 400. Adicionada coerção de tipo no parser: qty = parseInt(payload.qtd, 10). Validado com 15 ordens de teste — todas importadas corretamente. Comunicado ao ERP do cliente para corrigir a origem.', created_at: daysAgo(71) },
+  ],
+  447022: [
+    { id: 167, author_id: 216, public: true,  body: 'Coletor desconecta do MES sempre que o IIS reinicia — dados parados.', created_at: daysAgo(31) },
+    { id: 168, author_id: 103, public: true,  body: 'Problema identificado e corrigido. Coletor reconecta automaticamente.', created_at: daysAgo(29) },
+    { id: 169, author_id: 103, public: false, body: 'Serviço SKA.Coletor não estava configurado para reiniciar automaticamente após falha. Quando o IIS reiniciava, a conexão TCP era encerrada e o coletor entrava em estado de erro sem recuperação. Configurado: sc config SKA.Coletor start=auto e em Serviços → SKA.Coletor → Recuperação → ação de falha = Reiniciar o serviço (1, 2, 5 minutos). Testado três reinícios do IIS — coletor reconecta em < 60s.', created_at: daysAgo(29) },
+  ],
+  446011: [
+    { id: 170, author_id: 212, public: true,  body: 'OEE de disponibilidade aparece em duplicidade no relatório de turno.', created_at: daysAgo(56) },
+    { id: 171, author_id: 102, public: true,  body: 'Problema identificado e corrigido. OEE de disponibilidade correto no relatório.', created_at: daysAgo(54) },
+    { id: 172, author_id: 102, public: false, body: 'Query do relatório de turno fazia JOIN duplo com MES.DISPONIBILIDADE sem cláusula DISTINCT, resultando em linhas duplicadas que inflavam o SUM. Corrigido o SQL: SELECT DISTINCT CD_TURNO, SUM(TEMPO_DISP) OVER (PARTITION BY CD_TURNO). Validado em relatório de 7 dias — valores de disponibilidade consistentes com os exibidos no dashboard em tempo real.', created_at: daysAgo(54) },
+  ],
+  445000: [
+    { id: 173, author_id: 203, public: true,  body: 'Painel offline desde esta manhã — senha do usuário de serviço AWS expirou.', created_at: daysAgo(81) },
+    { id: 174, author_id: 105, public: true,  body: 'Acesso restabelecido. Painel operando normalmente.', created_at: daysAgo(79) },
+    { id: 175, author_id: 105, public: false, body: 'Usuário svc-directames na AWS com política de expiração de senha a cada 90 dias. Senha expirou e o serviço parou de autenticar nas APIs AWS (S3 e RDS). Ações: 1) Redefinida senha via IAM Console. 2) Atualizado appsettings.json → AWSPassword. 3) Configurada política de não-expiração para usuários de serviço: aws iam update-login-profile --no-password-reset-required. Aberto item no backlog para migrar para IAM Role sem senha.', created_at: daysAgo(79) },
+  ],
+  443989: [
+    { id: 176, author_id: 204, public: true,  body: 'Etiqueta de produção está imprimindo dados do lote anterior ao invés do lote atual.', created_at: daysAgo(49) },
+    { id: 177, author_id: 101, public: true,  body: 'Problema identificado e corrigido. Etiquetas imprimindo dados corretos.', created_at: daysAgo(47) },
+    { id: 178, author_id: 101, public: false, body: 'Template de etiqueta usava variável ${LOTE_ANTERIOR} em vez de ${LOTE_ATUAL} no campo de código de lote. Erro de digitação introduzido durante customização do template em 10/01. Corrigido o campo no editor de templates (Configurações → Etiquetas → editar). Impressas 5 etiquetas de teste com lotes distintos — todas corretas.', created_at: daysAgo(47) },
+  ],
+  442978: [
+    { id: 179, author_id: 213, public: true,  body: 'Viewer exibindo meta de OEE incorreta — aparece 85% mas a meta atual é 92%.', created_at: daysAgo(16) },
+    { id: 180, author_id: 104, public: true,  body: 'Problema identificado e corrigido. Meta de OEE atualizada no Viewer.', created_at: daysAgo(14) },
+    { id: 181, author_id: 104, public: false, body: 'Meta de OEE é configurada por turno em Configurações → Metas. O Viewer lê o campo META_OEE da tabela MES.CONFIG_TURNO, que estava com valor 85 (legado). Atualizado: UPDATE MES.CONFIG_TURNO SET META_OEE = 92 WHERE CD_ATIVO = 1. Reiniciado cache do Viewer (POST /api/viewer/refresh-cache). Viewer exibindo meta 92% corretamente em todos os turnos.', created_at: daysAgo(14) },
+  ],
+  441967: [
+    { id: 182, author_id: 217, public: true,  body: 'Índice de qualidade aparece negativo no relatório — valores como -15%.', created_at: daysAgo(89) },
+    { id: 183, author_id: 103, public: true,  body: 'Problema identificado e corrigido. Índice de qualidade calculando corretamente.', created_at: daysAgo(87) },
+    { id: 184, author_id: 103, public: false, body: 'Procedure P_CALCULAR_QUALIDADE dividia QT_APROVADO por QT_TOTAL, mas QT_TOTAL podia ser 0 para ordens canceladas antes de produção. Divisão por zero retornava NULL, que a UI convertia para -1 (bug de formatação JS: null * 100 = 0 mas o cálculo anterior dava -Infinity). Corrigido na procedure: CASE WHEN QT_TOTAL > 0 THEN CAST(QT_APROVADO AS FLOAT) / QT_TOTAL ELSE NULL END. UI atualizada para exibir "N/A" em vez de valor negativo.', created_at: daysAgo(87) },
+  ],
+  440956: [
+    { id: 185, author_id: 206, public: true,  body: 'Serviço SKA.Relatorios não inicia após atualização do Windows — erro 1053.', created_at: daysAgo(23) },
+    { id: 186, author_id: 102, public: true,  body: 'Serviço restabelecido. Relatórios operando normalmente.', created_at: daysAgo(21) },
+    { id: 187, author_id: 102, public: false, body: 'Windows Update KB5034441 alterou políticas de segurança de serviços, exigindo que usuários de serviço tenham o direito "Log on as a service". O usuário svc-relatorios perdeu esse direito. Corrigido via: secpol.msc → Diretivas Locais → Atribuição de Direitos → Fazer logon como serviço → adicionar svc-relatorios. Serviço iniciado normalmente. Documentado para aplicar preventivamente nos demais clientes na próxima rodada de Windows Updates.', created_at: daysAgo(21) },
+  ],
+  439945: [
+    { id: 188, author_id: 209, public: true,  body: 'Inspeção CEP com data de validade retroativa — sistema não aceita o registro.', created_at: daysAgo(34) },
+    { id: 189, author_id: 105, public: true,  body: 'Problema identificado e corrigido. Inspeções sendo registradas normalmente.', created_at: daysAgo(32) },
+    { id: 190, author_id: 105, public: false, body: 'Validação de data na API de inspeções CEP comparava DT_VALIDADE com GETDATE() e rejeitava qualquer data no passado. Inspeções com validade expirada mas ainda em análise eram bloqueadas. Corrigida a validação: data retroativa agora gera warning (campo DT_VALIDADE_EXPIRADA = 1) em vez de erro bloqueante. Rodado script para reprocessar 12 inspeções rejeitadas nas últimas 72h.', created_at: daysAgo(32) },
   ],
 };
 

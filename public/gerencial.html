@@ -16,8 +16,9 @@
   <div class="header-logo">SKA <span>Gerencial</span></div>
   <span id="badge-mode" class="badge-mode mock">MOCK</span>
   <div class="header-spacer"></div>
+  <span id="update-ts" class="update-ts"></span>
 
-  <!-- Selector de período -->
+  <!-- Seletor de período -->
   <div class="period-selector">
     <button class="period-btn active" data-days="7" onclick="onPeriodChange(7)">7 dias</button>
     <button class="period-btn" data-days="30" onclick="onPeriodChange(30)">30 dias</button>
@@ -38,37 +39,48 @@
 <main class="main">
 
   <!-- KPI LINHA 1: Estado atual -->
-  <h3 style="margin-bottom:0.6rem;">Estado atual</h3>
+  <h3 class="section-title" style="margin-bottom:0.6rem;">Estado atual</h3>
   <div class="kpi-row" style="margin-bottom:0.75rem;">
     <div class="kpi-card">
       <div class="kpi-label">Tickets abertos</div>
       <div id="kpi-open" class="kpi-value">—</div>
       <div class="kpi-sub">Total em aberto agora</div>
+      <div class="kpi-trend" id="kpi-open-trend"></div>
     </div>
     <div class="kpi-card">
       <div class="kpi-label">SLA violados</div>
       <div id="kpi-breached" class="kpi-value">—</div>
       <div class="kpi-sub">Breach no passado</div>
+      <div class="kpi-trend" id="kpi-breached-trend"></div>
     </div>
     <div class="kpi-card">
       <div class="kpi-label">Tempo médio 1ª resp</div>
       <div id="kpi-first-reply" class="kpi-value">—</div>
       <div class="kpi-sub">Últimos 7 dias (min)</div>
+      <div class="kpi-trend" id="kpi-reply-trend"></div>
     </div>
     <div class="kpi-card">
       <div class="kpi-label">CSAT</div>
       <div id="kpi-csat" class="kpi-value">—</div>
       <div class="kpi-sub">Últimos 30 dias</div>
+      <div class="kpi-trend" id="kpi-csat-trend"></div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Idade média em aberto</div>
+      <div id="kpi-avg-open" class="kpi-value">—</div>
+      <div class="kpi-sub">Tempo médio na fila</div>
+      <div class="kpi-trend" id="kpi-avg-open-trend"></div>
     </div>
   </div>
 
   <!-- KPI LINHA 2: Período selecionado -->
-  <h3 style="margin-bottom:0.6rem;" id="period-label">Período: 7 dias</h3>
+  <h3 class="section-title" style="margin-bottom:0.6rem;" id="period-label">Período: 7 dias</h3>
   <div class="kpi-row">
     <div class="kpi-card">
       <div class="kpi-label">Resolvidos no período</div>
       <div id="kpi-resolved" class="kpi-value">—</div>
       <div class="kpi-sub">Status solved</div>
+      <div class="kpi-trend" id="kpi-resolved-trend"></div>
     </div>
     <div class="kpi-card">
       <div class="kpi-label">Tempo médio resolução</div>
@@ -79,16 +91,23 @@
       <div class="kpi-label">Reabertos</div>
       <div id="kpi-reopened" class="kpi-value">—</div>
       <div class="kpi-sub">Voltaram de solved</div>
+      <div class="kpi-trend" id="kpi-reopened-trend"></div>
     </div>
     <div class="kpi-card">
       <div class="kpi-label">Sem agente (máx)</div>
       <div id="kpi-unassigned" class="kpi-value">—</div>
       <div class="kpi-sub">Pico no período</div>
+      <div class="kpi-trend" id="kpi-unassigned-trend"></div>
     </div>
     <div class="kpi-card">
       <div class="kpi-label">Base de conhecimento</div>
-      <div id="kpi-kb" class="kpi-value">—</div>
-      <div class="kpi-sub">Com resolução documentada</div>
+      <div id="kpi-kb" class="kpi-value" title="% dos tickets resolvidos no período com nota interna documentada">—</div>
+      <div class="kpi-sub" id="kpi-kb-sub">Com resolução documentada</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Taxa de resolução</div>
+      <div id="kpi-resolution-rate" class="kpi-value">—</div>
+      <div class="kpi-sub">Resolvidos / abertos</div>
     </div>
   </div>
 
@@ -114,8 +133,8 @@
     </div>
   </div>
 
-  <!-- TEMPO EM ABERTO + STATUS SLA -->
-  <div class="grid-two">
+  <!-- TEMPO EM ABERTO + STATUS SLA + DISTRIBUIÇÃO DE PRIORIDADE -->
+  <div class="grid-three">
     <div class="card">
       <div class="card-header"><h2>Tempo em Aberto</h2></div>
       <div class="card-body">
@@ -125,6 +144,13 @@
     <div class="card">
       <div class="card-header"><h2>Status de SLA</h2></div>
       <div class="card-body" id="sla-status"></div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <h2>Distribuição de Prioridade</h2>
+        <span id="priority-reset" style="font-size:0.78rem;color:var(--blue);cursor:pointer;display:none;" onclick="clearPriorityFilter()">Limpar filtro</span>
+      </div>
+      <div class="card-body" id="priority-dist"></div>
     </div>
   </div>
 
@@ -143,7 +169,7 @@
           </tr>
         </thead>
         <tbody id="perf-body">
-          <tr><td colspan="4" class="empty-state">Carregando...</td></tr>
+          <tr><td colspan="5" class="empty-state">Carregando...</td></tr>
         </tbody>
       </table>
     </div>
@@ -154,11 +180,11 @@
     <div class="card-header"><h2>Tickets Críticos</h2></div>
     <div style="padding:0.75rem 1.25rem 0;">
       <div class="filter-bar">
-        <button class="filter-btn active" data-filter="all" onclick="applyFilter('all')">Todos</button>
-        <button class="filter-btn" data-filter="sla-risk" onclick="applyFilter('sla-risk')">SLA em risco</button>
-        <button class="filter-btn" data-filter="sla-breach" onclick="applyFilter('sla-breach')">SLA violado</button>
-        <button class="filter-btn" data-filter="no-agent" onclick="applyFilter('no-agent')">Sem agente</button>
-        <button class="filter-btn" data-filter="old" onclick="applyFilter('old')">Mais de 3 dias</button>
+        <button class="filter-btn active" data-filter="all"       onclick="applyFilter('all')">Todos</button>
+        <button class="filter-btn"        data-filter="sla-risk"  onclick="applyFilter('sla-risk')">SLA em risco</button>
+        <button class="filter-btn"        data-filter="sla-breach" onclick="applyFilter('sla-breach')">SLA violado</button>
+        <button class="filter-btn"        data-filter="no-agent"  onclick="applyFilter('no-agent')">Sem agente</button>
+        <button class="filter-btn"        data-filter="old"       onclick="applyFilter('old')">Mais de 3 dias</button>
       </div>
     </div>
     <div style="overflow-x:auto;">
@@ -183,14 +209,22 @@
 
 </main>
 
+<!-- ATALHOS -->
+<footer class="shortcuts-footer">
+  <span><kbd>R</kbd> Atualizar dados</span>
+  <span><kbd>7</kbd> / <kbd>3</kbd> / <kbd>9</kbd> Período</span>
+</footer>
+
 <script>
 /* ── Estado global ─────────────────────────────────────────────────────────── */
-let period       = 7;
-let openTickets  = [];
-let solvedBase   = [];
-let agentsData   = [];
-let clientFilter = null;
-let activeFilter = 'all';
+let period          = 7;
+let openTickets     = [];
+let solvedBase      = [];
+let agentsData      = [];
+let clientFilter    = null;
+let activeFilter    = 'all';
+let activePriorityFilter = null;
+let prevKPIs        = null;
 
 /* ── Utilitários ───────────────────────────────────────────────────────────── */
 function escHtml(str) {
@@ -247,6 +281,32 @@ function filterByPeriod(tickets, days) {
   return tickets.filter(t => new Date(t.updated_at || t.solved_at).getTime() >= cutoff);
 }
 
+/* ── Timestamp ─────────────────────────────────────────────────────────────── */
+function setUpdating() {
+  const el = document.getElementById('update-ts');
+  el.textContent = 'Atualizando...';
+  el.classList.add('updating');
+}
+
+function setUpdated() {
+  const el = document.getElementById('update-ts');
+  el.classList.remove('updating');
+  const now = new Date();
+  el.textContent = `Atualizado às ${now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
+}
+
+/* ── Indicadores de tendência ──────────────────────────────────────────────── */
+function renderTrend(elId, current, prev, lowerIsBetter) {
+  const el = document.getElementById(elId);
+  if (!el || prev == null || current == null) { if (el) el.textContent = ''; return; }
+  const diff = current - prev;
+  if (diff === 0) { el.innerHTML = '<span>= Estável</span>'; el.className = 'kpi-trend flat'; return; }
+  const arrow = diff > 0 ? '▲' : '▼';
+  const isGood = lowerIsBetter ? diff < 0 : diff > 0;
+  el.className = 'kpi-trend ' + (isGood ? 'up-good' : 'up-bad');
+  el.textContent = `${arrow} ${Math.abs(diff)}`;
+}
+
 /* ── Status ────────────────────────────────────────────────────────────────── */
 async function loadStatus() {
   try {
@@ -260,7 +320,7 @@ async function loadStatus() {
 }
 
 /* ── KPIs ──────────────────────────────────────────────────────────────────── */
-function renderKPIs(kpis, solvedPeriod) {
+function renderKPIs(kpis, solvedPeriod, allOpen) {
   // Linha 1
   const openEl = document.getElementById('kpi-open');
   openEl.textContent = kpis.open;
@@ -278,6 +338,21 @@ function renderKPIs(kpis, solvedPeriod) {
   csatEl.textContent = kpis.csat != null ? kpis.csat + '%' : '—';
   csatEl.className = 'kpi-value' + (kpis.csat != null && kpis.csat >= 90 ? ' ok' : ' warn');
 
+  // Idade média dos tickets em aberto
+  const avgOpenH = allOpen.length > 0
+    ? allOpen.reduce((a, t) => a + (Date.now() - new Date(t.created_at).getTime()), 0) / allOpen.length / 3600000
+    : null;
+  const avgOpenEl = document.getElementById('kpi-avg-open');
+  if (avgOpenH != null) {
+    const d = Math.floor(avgOpenH / 24);
+    const h = Math.round(avgOpenH % 24);
+    avgOpenEl.textContent = d > 0 ? `${d}d ${h}h` : `${Math.round(avgOpenH)}h`;
+    avgOpenEl.className = 'kpi-value' + (avgOpenH > 48 ? ' danger' : avgOpenH > 24 ? ' warn' : ' ok');
+  } else {
+    avgOpenEl.textContent = '—';
+    avgOpenEl.className = 'kpi-value';
+  }
+
   // Linha 2
   document.getElementById('kpi-resolved').textContent   = solvedPeriod.length;
   document.getElementById('kpi-reopened').textContent   = kpis.reopened || 0;
@@ -288,6 +363,8 @@ function renderKPIs(kpis, solvedPeriod) {
   const kbEl = document.getElementById('kpi-kb');
   kbEl.textContent = kbPct != null ? kbPct + '%' : '—';
   kbEl.className = 'kpi-value' + (kbPct == null ? '' : kbPct >= 70 ? ' ok' : kbPct >= 40 ? ' warn' : ' danger');
+  document.getElementById('kpi-kb-sub').textContent =
+    kbPct != null ? `${withResolution} de ${solvedPeriod.length} tickets` : 'Com resolução documentada';
 
   const avgRes = solvedPeriod.reduce((acc, t) => {
     const created = new Date(t.created_at || t.solved_at).getTime();
@@ -297,6 +374,24 @@ function renderKPIs(kpis, solvedPeriod) {
   document.getElementById('kpi-avg-res').textContent = solvedPeriod.length
     ? Math.round(avgRes * 10) / 10 + 'h'
     : '—';
+
+  // Taxa de resolução
+  const rateEl = document.getElementById('kpi-resolution-rate');
+  const rate = kpis.open > 0 ? Math.round((solvedPeriod.length / (solvedPeriod.length + kpis.open)) * 100) : null;
+  rateEl.textContent = rate != null ? rate + '%' : '—';
+  rateEl.className = 'kpi-value' + (rate == null ? '' : rate >= 70 ? ' ok' : rate >= 40 ? ' warn' : ' danger');
+
+  // Tendências (comparando com ciclo anterior)
+  if (prevKPIs) {
+    renderTrend('kpi-open-trend',       kpis.open,                prevKPIs.open,                true);
+    renderTrend('kpi-breached-trend',   kpis.slaBreached,         prevKPIs.slaBreached,         true);
+    renderTrend('kpi-reply-trend',      kpis.avgFirstReplyMinutes, prevKPIs.avgFirstReplyMinutes, true);
+    renderTrend('kpi-csat-trend',       kpis.csat,                prevKPIs.csat,                false);
+    renderTrend('kpi-resolved-trend',   solvedPeriod.length,      prevKPIs.resolvedPeriod,      false);
+    renderTrend('kpi-reopened-trend',   kpis.reopened,            prevKPIs.reopened,            true);
+    renderTrend('kpi-unassigned-trend', kpis.unassigned,          prevKPIs.unassigned,          true);
+  }
+  prevKPIs = { ...kpis, resolvedPeriod: solvedPeriod.length };
 }
 
 /* ── Volume por cliente ────────────────────────────────────────────────────── */
@@ -309,6 +404,11 @@ function renderClientVolume(tickets) {
   const total = Object.values(counts).reduce((a, b) => a + b, 0) || 1;
   const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
   const max = sorted[0]?.[1] || 1;
+
+  if (!sorted.length) {
+    document.getElementById('client-volume').innerHTML = '<div class="empty-state">Nenhum dado.</div>';
+    return;
+  }
 
   document.getElementById('client-volume').innerHTML = sorted.map(([name, count]) => {
     const pct = Math.round((count / total) * 100);
@@ -342,12 +442,11 @@ function clearClientFilter() {
 function renderTimeDistribution(tickets) {
   const now = Date.now();
   const buckets = [
-    { label: '< 4h',     min: 0,   max: 4,   cls: 'ok',     alert: null },
-    { label: '4–24h',    min: 4,   max: 24,  cls: 'ok',     alert: null },
-    { label: '1–3 dias', min: 24,  max: 72,  cls: 'warn',   alert: 'ALERTA' },
-    { label: '> 3 dias', min: 72,  max: Inf, cls: 'danger', alert: 'CRÍTICO' },
+    { label: '< 4h',     min: 0,        max: 4,        cls: 'ok',     alert: null },
+    { label: '4–24h',    min: 4,        max: 24,       cls: 'ok',     alert: null },
+    { label: '1–3 dias', min: 24,       max: 72,       cls: 'warn',   alert: 'ALERTA' },
+    { label: '> 3 dias', min: 72,       max: Infinity, cls: 'danger', alert: 'CRÍTICO' },
   ];
-  const Inf = Infinity;
 
   const counts = buckets.map(b => ({
     ...b,
@@ -408,53 +507,40 @@ function renderSLAStatus(tickets) {
     </div>`;
 }
 
-/* ── Desempenho da equipe ─────────────────────────────────────────────────── */
-function renderTeamPerformance(agents, tickets, solved) {
-  const body = document.getElementById('perf-body');
+/* ── Distribuição de prioridade ────────────────────────────────────────────── */
+function renderPriorityDist(tickets) {
+  const priorities = ['urgent', 'high', 'normal', 'low'];
+  const labels = { urgent: 'Urgente', high: 'Alta', normal: 'Normal', low: 'Baixa' };
+  const counts = {};
+  priorities.forEach(p => { counts[p] = tickets.filter(t => t.priority === p).length; });
+  const max = Math.max(...Object.values(counts), 1);
 
-  if (!agents.length) {
-    body.innerHTML = '<tr><td colspan="5" class="empty-state">Sem dados de agentes.</td></tr>';
-    return;
-  }
-
-  body.innerHTML = agents.map(agent => {
-    const resolvedByAgent = solved.filter(t => t.assignee_id === agent.id || t.agent_name === agent.name);
-    const openByAgent = tickets.filter(t => t.assignee_id === agent.id);
-    const oldest = openByAgent.sort((a, b) => new Date(a.created_at) - new Date(b.created_at))[0];
-
-    // Tempo médio de resolução calculado a partir de created_at → updated_at
-    let avgResHtml = '<span class="text-muted">—</span>';
-    if (resolvedByAgent.length > 0) {
-      const totalH = resolvedByAgent.reduce((acc, t) => {
-        const created = new Date(t.created_at || t.solved_at).getTime();
-        const updated = new Date(t.updated_at  || t.solved_at).getTime();
-        return acc + (updated - created) / 3600000;
-      }, 0);
-      const avg = Math.round((totalH / resolvedByAgent.length) * 10) / 10;
-      avgResHtml = `<span class="font-mono">${avg}h</span>`;
-    }
-
-    // Tempo médio de 1ª resposta (simulado — em produção viria da API)
-    const avgReply = agent.id === 101 ? '32min' : agent.id === 102 ? '51min' : '44min';
-
-    const oldestCell = oldest
-      ? `<span class="time-open ${timeClass(oldest.created_at)}">${tempoAberto(oldest.created_at)}</span> <span style="font-size:0.78rem;color:var(--muted);">#${oldest.id}</span>`
-      : '<span class="text-muted">—</span>';
-
+  document.getElementById('priority-dist').innerHTML = priorities.map(p => {
+    const pct = Math.round((counts[p] / max) * 100);
+    const isActive = activePriorityFilter === p ? ' active' : '';
     return `
-      <tr>
-        <td>
-          <div style="display:flex;align-items:center;gap:0.5rem;">
-            <div class="agent-avatar" style="width:28px;height:28px;font-size:0.75rem;">${agent.name.charAt(0)}</div>
-            <span style="font-size:0.85rem;font-weight:500;">${escHtml(agent.name)}</span>
-          </div>
-        </td>
-        <td><span class="font-mono">${resolvedByAgent.length}</span></td>
-        <td>${avgResHtml}</td>
-        <td><span class="font-mono">${avgReply}</span></td>
-        <td>${oldestCell}</td>
-      </tr>`;
+      <div class="dist-item${isActive}" style="cursor:pointer;" onclick="togglePriorityFilter('${p}')">
+        <span class="dist-label">${labels[p]}</span>
+        <div class="dist-bar-track">
+          <div class="dist-bar-fill priority-${p}" style="width:${pct}%"></div>
+        </div>
+        <span class="dist-count">${counts[p]}</span>
+      </div>`;
   }).join('');
+}
+
+function togglePriorityFilter(p) {
+  activePriorityFilter = activePriorityFilter === p ? null : p;
+  document.getElementById('priority-reset').style.display = activePriorityFilter ? 'inline' : 'none';
+  renderPriorityDist(openTickets);
+  renderCriticalTickets(openTickets);
+}
+
+function clearPriorityFilter() {
+  activePriorityFilter = null;
+  document.getElementById('priority-reset').style.display = 'none';
+  renderPriorityDist(openTickets);
+  renderCriticalTickets(openTickets);
 }
 
 /* ── Problemas recorrentes ────────────────────────────────────────────────── */
@@ -465,12 +551,10 @@ function renderRecurringTags(solved) {
     (t.tags || []).forEach(tag => { counts[tag] = (counts[tag] || 0) + 1; });
   });
 
-  const sorted = Object.entries(counts)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 5);
+  const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 5);
 
   if (!sorted.length) {
-    container.innerHTML = '<div class="empty-state">Nenhum dado no período.</div>';
+    container.innerHTML = '<div class="empty-state">Nenhuma tag encontrada no período.</div>';
     return;
   }
 
@@ -492,6 +576,55 @@ function renderRecurringTags(solved) {
   }).join('');
 }
 
+/* ── Desempenho da equipe ─────────────────────────────────────────────────── */
+function renderTeamPerformance(agents, tickets, solved) {
+  const body = document.getElementById('perf-body');
+
+  if (!agents.length) {
+    body.innerHTML = '<tr><td colspan="5" class="empty-state">Sem dados de agentes.</td></tr>';
+    return;
+  }
+
+  body.innerHTML = agents.map(agent => {
+    const resolvedByAgent = solved.filter(t => t.assignee_id === agent.id || t.agent_name === agent.name);
+    const openByAgent = tickets.filter(t => t.assignee_id === agent.id);
+    const oldest = openByAgent.sort((a, b) => new Date(a.created_at) - new Date(b.created_at))[0];
+
+    let avgResHtml = '<span class="text-muted">—</span>';
+    if (resolvedByAgent.length > 0) {
+      const totalH = resolvedByAgent.reduce((acc, t) => {
+        const created = new Date(t.created_at || t.solved_at).getTime();
+        const updated = new Date(t.updated_at  || t.solved_at).getTime();
+        return acc + (updated - created) / 3600000;
+      }, 0);
+      const avg = Math.round((totalH / resolvedByAgent.length) * 10) / 10;
+      avgResHtml = `<span class="font-mono">${avg}h</span>`;
+    }
+
+    // Tempo médio de 1ª resposta (simulado por agente)
+    const replyMap = { 101: '32min', 102: '51min', 103: '44min', 104: '38min', 105: '56min' };
+    const avgReply = replyMap[agent.id] || '45min';
+
+    const oldestCell = oldest
+      ? `<span class="time-open ${timeClass(oldest.created_at)}">${tempoAberto(oldest.created_at)}</span> <span style="font-size:0.78rem;color:var(--muted);">#${oldest.id}</span>`
+      : '<span class="text-muted">—</span>';
+
+    return `
+      <tr>
+        <td>
+          <div style="display:flex;align-items:center;gap:0.5rem;">
+            <div class="agent-avatar" style="width:28px;height:28px;font-size:0.75rem;">${agent.name.charAt(0)}</div>
+            <span style="font-size:0.85rem;font-weight:500;">${escHtml(agent.name)}</span>
+          </div>
+        </td>
+        <td><span class="font-mono">${resolvedByAgent.length}</span></td>
+        <td>${avgResHtml}</td>
+        <td><span class="font-mono">${avgReply}</span></td>
+        <td>${oldestCell}</td>
+      </tr>`;
+  }).join('');
+}
+
 /* ── Filtros ───────────────────────────────────────────────────────────────── */
 function applyFilter(filter) {
   activeFilter = filter;
@@ -506,6 +639,18 @@ function renderCriticalTickets(tickets) {
   let filtered = clientFilter
     ? tickets.filter(t => t.organization_name === clientFilter)
     : tickets;
+
+  if (activePriorityFilter) {
+    filtered = filtered.filter(t => t.priority === activePriorityFilter);
+  }
+
+  const filterLabels = {
+    'all': 'Todos os tickets',
+    'sla-risk': 'SLA em risco',
+    'sla-breach': 'SLA violado',
+    'no-agent': 'Sem agente atribuído',
+    'old': 'Abertos há mais de 3 dias',
+  };
 
   switch (activeFilter) {
     case 'sla-risk':
@@ -532,7 +677,6 @@ function renderCriticalTickets(tickets) {
       break;
   }
 
-  // Ordenar: violados → sem agente → mais antigos
   filtered.sort((a, b) => {
     const aM = a.sla_policy?.policy_metrics?.[0];
     const bM = b.sla_policy?.policy_metrics?.[0];
@@ -547,7 +691,14 @@ function renderCriticalTickets(tickets) {
   const body = document.getElementById('critical-body');
 
   if (!filtered.length) {
-    body.innerHTML = '<tr><td colspan="7" class="empty-state">Nenhum ticket nesta categoria.</td></tr>';
+    const emptyMessages = {
+      'sla-risk':   '✓ Nenhum ticket com SLA em risco. Boa operação!',
+      'sla-breach': '✓ Nenhum SLA violado no momento.',
+      'no-agent':   '✓ Todos os tickets estão atribuídos.',
+      'old':        '✓ Nenhum ticket com mais de 3 dias em aberto.',
+      'all':        clientFilter ? `Nenhum ticket aberto para ${escHtml(clientFilter)}.` : 'Nenhum ticket aberto.',
+    };
+    body.innerHTML = `<tr><td colspan="7" class="empty-state">${emptyMessages[activeFilter] || 'Nenhum ticket encontrado.'}</td></tr>`;
     return;
   }
 
@@ -573,15 +724,12 @@ function renderCriticalTickets(tickets) {
 
 /* ── Render completo ───────────────────────────────────────────────────────── */
 function renderAll() {
-  const filtered = clientFilter
-    ? openTickets.filter(t => t.organization_name === clientFilter)
-    : openTickets;
   const solvedPeriod = filterByPeriod(solvedBase, period);
-
-  renderClientVolume(openTickets); // barras sempre com total
-  renderRecurringTags(filterByPeriod(solvedBase, period));
-  renderTimeDistribution(filtered);
-  renderSLAStatus(filtered);
+  renderClientVolume(openTickets);
+  renderRecurringTags(solvedPeriod);
+  renderTimeDistribution(clientFilter ? openTickets.filter(t => t.organization_name === clientFilter) : openTickets);
+  renderSLAStatus(clientFilter ? openTickets.filter(t => t.organization_name === clientFilter) : openTickets);
+  renderPriorityDist(openTickets);
   renderCriticalTickets(openTickets);
 }
 
@@ -597,6 +745,7 @@ function onPeriodChange(days) {
 
 /* ── Carregamento ──────────────────────────────────────────────────────────── */
 async function loadAll() {
+  setUpdating();
   try {
     const [kpisRes, openRes, solvedRes, agentsRes] = await Promise.all([
       fetch('/api/kpis'),
@@ -617,18 +766,30 @@ async function loadAll() {
 
     const solvedPeriod = filterByPeriod(solvedBase, period);
 
-    renderKPIs(kpisData, solvedPeriod);
+    renderKPIs(kpisData, solvedPeriod, openTickets);
     renderClientVolume(openTickets);
     renderRecurringTags(solvedPeriod);
     renderTimeDistribution(openTickets);
     renderSLAStatus(openTickets);
+    renderPriorityDist(openTickets);
     renderTeamPerformance(agentsData, openTickets, solvedPeriod);
     renderCriticalTickets(openTickets);
+    setUpdated();
 
   } catch (err) {
     console.error('Erro ao carregar dados gerenciais:', err);
+    document.getElementById('update-ts').textContent = 'Erro ao atualizar';
   }
 }
+
+/* ── Atalhos de teclado ────────────────────────────────────────────────────── */
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT') return;
+  if (e.key === 'r' || e.key === 'R') { e.preventDefault(); loadAll(); }
+  if (e.key === '7') onPeriodChange(7);
+  if (e.key === '3') onPeriodChange(30);
+  if (e.key === '9') onPeriodChange(90);
+});
 
 /* ── Init ──────────────────────────────────────────────────────────────────── */
 async function init() {
@@ -638,11 +799,11 @@ async function init() {
   const ttl = 5 * 60 * 1000;
   setInterval(loadAll, ttl);
 
-  // Atualizar tempos a cada 30s
   setInterval(() => {
     if (openTickets.length) {
-      renderTimeDistribution(clientFilter ? openTickets.filter(t => t.organization_name === clientFilter) : openTickets);
-      renderSLAStatus(clientFilter ? openTickets.filter(t => t.organization_name === clientFilter) : openTickets);
+      const filtered = clientFilter ? openTickets.filter(t => t.organization_name === clientFilter) : openTickets;
+      renderTimeDistribution(filtered);
+      renderSLAStatus(filtered);
       renderCriticalTickets(openTickets);
     }
   }, 30000);
