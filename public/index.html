@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SKA Suporte N1</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="header">
+  <div class="header-logo">SKA <span>Suporte N1</span></div>
+  <span id="badge-mode" class="badge-mode mock">MOCK</span>
+  <div class="header-spacer"></div>
+  <span id="clock" class="header-clock"></span>
+  <nav class="nav-views">
+    <a href="/" class="active">N1</a>
+    <a href="/gerencial.html">Gerencial</a>
+  </nav>
+</header>
+
+<!-- BANNER DEMO -->
+<div id="demo-banner" class="demo-banner">
+  Modo demonstração — dados simulados. Configure as credenciais no arquivo <strong>.env</strong> para conectar ao Zendesk.
+</div>
+
+<main class="main">
+
+  <!-- KPIs -->
+  <div class="kpi-row">
+    <div class="kpi-card">
+      <div class="kpi-label">Tickets abertos</div>
+      <div id="kpi-open" class="kpi-value">—</div>
+      <div class="kpi-sub" id="kpi-open-sub"></div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Sem agente</div>
+      <div id="kpi-unassigned" class="kpi-value">—</div>
+      <div class="kpi-sub">Aguardando atribuição</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Resolvidos hoje</div>
+      <div id="kpi-solved-today" class="kpi-value">—</div>
+      <div class="kpi-sub">Fechados no dia</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">SLA em risco</div>
+      <div id="kpi-sla-risk" class="kpi-value">—</div>
+      <div class="kpi-sub">Breach &lt; 60min</div>
+    </div>
+  </div>
+
+  <!-- BUSCA DE RESOLUÇÃO -->
+  <div class="search-card">
+    <div style="margin-bottom:0.75rem;">
+      <h2 style="font-size:0.9rem;">Busca de Resolução</h2>
+      <p style="font-size:0.78rem;color:var(--muted);margin-top:2px;">Encontre chamados similares já resolvidos</p>
+    </div>
+    <div class="search-row">
+      <input
+        id="search-input"
+        class="search-input"
+        type="text"
+        placeholder="Cole aqui o problema do chamado atual..."
+        autocomplete="off"
+      >
+      <button class="btn-primary" onclick="doSearch()">Buscar</button>
+    </div>
+    <div id="search-results" class="search-results"></div>
+  </div>
+
+  <!-- GRID: Fila + Carga por agente -->
+  <div class="grid-main">
+
+    <!-- Fila de tickets abertos -->
+    <div class="card">
+      <div class="card-header">
+        <h2>Fila Aberta</h2>
+        <span id="queue-count" class="count">0</span>
+      </div>
+      <div style="overflow-x:auto;">
+        <table class="ticket-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Assunto</th>
+              <th>Cliente</th>
+              <th>Prioridade</th>
+              <th>Tempo aberto</th>
+              <th>Agente</th>
+              <th>SLA restante</th>
+            </tr>
+          </thead>
+          <tbody id="queue-body">
+            <tr><td colspan="7" class="empty-state">Carregando...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Carga por agente -->
+    <div class="card">
+      <div class="card-header">
+        <h2>Carga por Agente</h2>
+      </div>
+      <div class="card-body">
+        <div id="agent-list" class="agent-list">
+          <div class="empty-state">Carregando...</div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /grid-main -->
+</main>
+
+<!-- MODAL DETALHE -->
+<div id="modal-overlay" class="modal-overlay" onclick="handleOverlayClick(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <div style="flex:1;">
+        <div id="modal-title" class="modal-title"></div>
+        <div id="modal-id" class="modal-id"></div>
+      </div>
+      <button class="btn-close" onclick="closeModal()">&#10005;</button>
+    </div>
+    <div id="modal-meta" class="modal-meta"></div>
+    <div id="modal-resolution" class="modal-section" style="display:none;">
+      <div class="modal-section-title">Resolução Documentada</div>
+      <div id="modal-resolution-box" class="resolution-box"></div>
+    </div>
+    <div class="modal-section">
+      <div class="modal-section-title">Histórico de Conversa</div>
+      <div id="modal-conversation" class="conversation"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-secondary" id="btn-similar" onclick="searchFromModal()">Buscar similares</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ── Estado global ─────────────────────────────────────────────────────────── */
+let openTickets = [];
+let solvedBase  = [];
+let agentsData  = [];
+let modalTicket = null;
+let isMock      = false;
+const CACHE_SOLVED_TTL = 30 * 60 * 1000;
+let solvedLoadedAt = 0;
+
+/* ── Relógio ───────────────────────────────────────────────────────────────── */
+function startClock() {
+  const el = document.getElementById('clock');
+  const tick = () => {
+    const now = new Date();
+    el.textContent = now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  };
+  tick();
+  setInterval(tick, 1000);
+}
+
+/* ── Formato de tempo aberto ───────────────────────────────────────────────── */
+function tempoAberto(created_at) {
+  const diff = Date.now() - new Date(created_at).getTime();
+  const h = Math.floor(diff / 3600000);
+  const m = Math.floor((diff % 3600000) / 60000);
+  const d = Math.floor(h / 24);
+  if (h === 0) return `${m}min`;
+  if (h < 24)  return `${h}h${m > 0 ? m + 'm' : ''}`;
+  return `${d}d ${h % 24}h`;
+}
+
+function timeClass(created_at) {
+  const h = (Date.now() - new Date(created_at).getTime()) / 3600000;
+  if (h < 2)  return 'green';
+  if (h < 8)  return 'yellow';
+  return 'red';
+}
+
+/* ── SLA restante ──────────────────────────────────────────────────────────── */
+function slaLabel(ticket) {
+  const metric = ticket.sla_policy?.policy_metrics?.[0];
+  if (!metric || !metric.breach_at) return { text: '—', cls: '' };
+  const now = Date.now();
+  const breach = new Date(metric.breach_at).getTime();
+  const diff = breach - now;
+  if (diff < 0) {
+    const m = Math.abs(Math.floor(diff / 60000));
+    return { text: `Violado ${m}min`, cls: 'breach' };
+  }
+  const h = Math.floor(diff / 3600000);
+  const m = Math.floor((diff % 3600000) / 60000);
+  const text = h > 0 ? `${h}h${m}m` : `${m}min`;
+  if (diff < 60 * 60 * 1000) return { text, cls: 'danger' };
+  if (diff < 2 * 60 * 60 * 1000) return { text, cls: 'warn' };
+  return { text, cls: 'ok' };
+}
+
+/* ── Prioridade ────────────────────────────────────────────────────────────── */
+function priorityLabel(p) {
+  const labels = { urgent: 'Urgente', high: 'Alta', normal: 'Normal', low: 'Baixa' };
+  return `<span class="priority ${p || 'normal'}">${labels[p] || p || 'Normal'}</span>`;
+}
+
+/* ── Renderizar KPIs ───────────────────────────────────────────────────────── */
+function renderKPIs(kpis) {
+  const openEl = document.getElementById('kpi-open');
+  openEl.textContent = kpis.open;
+  openEl.className = 'kpi-value' + (kpis.open > 30 ? ' danger' : '');
+  document.getElementById('kpi-open-sub').textContent = 'tickets aguardando';
+
+  const unEl = document.getElementById('kpi-unassigned');
+  unEl.textContent = kpis.unassigned;
+  unEl.className = 'kpi-value' + (kpis.unassigned > 5 ? ' danger' : kpis.unassigned > 0 ? ' warn' : ' ok');
+
+  const stEl = document.getElementById('kpi-solved-today');
+  stEl.textContent = kpis.solvedToday;
+  stEl.className = 'kpi-value' + (kpis.solvedToday > 0 ? ' ok' : '');
+
+  const slaEl = document.getElementById('kpi-sla-risk');
+  slaEl.textContent = kpis.slaAtRisk;
+  slaEl.className = 'kpi-value' + (kpis.slaAtRisk > 0 ? ' danger' : ' ok');
+}
+
+/* ── Renderizar fila ───────────────────────────────────────────────────────── */
+function renderQueue(tickets) {
+  document.getElementById('queue-count').textContent = tickets.length;
+  const tbody = document.getElementById('queue-body');
+
+  if (!tickets.length) {
+    tbody.innerHTML = '<tr><td colspan="7" class="empty-state">Nenhum ticket aberto.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = tickets.map(t => {
+    const sla = slaLabel(t);
+    const tc = timeClass(t.created_at);
+    const agentInfo = t.assignee_id
+      ? (agentsData.find(a => a.id === t.assignee_id)?.name || `#${t.assignee_id}`)
+      : '<span class="no-agent">— sem agente</span>';
+    return `
+      <tr>
+        <td class="ticket-id">${t.id}</td>
+        <td>
+          <span class="ticket-subject" onclick="openModal(${t.id})">${escHtml(t.subject)}</span>
+        </td>
+        <td style="font-size:0.82rem;">${escHtml(t.organization_name || '—')}</td>
+        <td>${priorityLabel(t.priority)}</td>
+        <td><span class="time-open ${tc}">${tempoAberto(t.created_at)}</span></td>
+        <td style="font-size:0.82rem;">${agentInfo}</td>
+        <td><span class="sla-remaining ${sla.cls}">${sla.text}</span></td>
+      </tr>`;
+  }).join('');
+}
+
+/* ── Renderizar agentes ────────────────────────────────────────────────────── */
+function renderAgents(agents) {
+  const container = document.getElementById('agent-list');
+  if (!agents.length) { container.innerHTML = '<div class="empty-state">Sem agentes.</div>'; return; }
+
+  const max = Math.max(...agents.map(a => a.open_count), 1);
+  container.innerHTML = agents.map(a => {
+    const pct = Math.round((a.open_count / max) * 100);
+    const initial = a.name.charAt(0).toUpperCase();
+    return `
+      <div class="agent-item">
+        <div class="agent-avatar">${initial}</div>
+        <div class="agent-info">
+          <div class="agent-name">${escHtml(a.name)}</div>
+          <div class="agent-bar-row">
+            <div class="agent-bar-track">
+              <div class="agent-bar-fill" style="width:${pct}%"></div>
+            </div>
+            <span class="agent-count">${a.open_count}</span>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+/* ── Algoritmo de similaridade ─────────────────────────────────────────────── */
+function calcularSimilaridade(query, ticket) {
+  const q = query.toLowerCase().split(/\s+/).filter(w => w.length > 3);
+  const texto = (
+    ticket.subject + ' ' +
+    (ticket.tags || []).join(' ') + ' ' +
+    (ticket.resolution || '')
+  ).toLowerCase();
+
+  let score = 0;
+  q.forEach(palavra => {
+    if (texto.includes(palavra)) score += 40;
+
+    const sinonimos = {
+      'agente':     ['agente_agente', 'agente_cep', 'indicadores', 'agent'],
+      'indicador':  ['oee', 'desempenho', 'disponibilidade', 'qualidade', 'zerado', 'zerando'],
+      'suite':      ['directames', 'versao', 'atualizacao', 'update', 'release'],
+      'inspecao':   ['cep', 'atraso', 'inspecao_atrasada', 'agendamento'],
+      'integracao': ['ordem', 'api', 'planning', 'json', 'importacao'],
+      'banco':      ['sql', 'script', 'select', 'restore', 'backup', 'procedure'],
+      'servidor':   ['aws', 'iis', 'cpu', 'lentidao', 'consumo'],
+      'maquina':    ['estado', 'ociosa', 'parada', 'producao', 'coletor'],
+      'viewer':     ['oee', 'divergencia', 'indicador', 'tv'],
+      'erro':       ['falha', 'error', 'bug', 'bo', 'crash', 'quebrou', 'tela_branca', '500', '404'],
+      'acesso':     ['login', 'senha', 'password', 'bloqueio', 'autenticacao', 'ad'],
+      'lento':      ['lentidao', 'travando', 'demora', 'performance', 'pesado'],
+      'email':      ['outlook', 'smtp', 'exchange', 'caixa', 'sincroniza'],
+    };
+
+    Object.entries(sinonimos).forEach(([termo, syns]) => {
+      if (syns.includes(palavra) || termo === palavra) {
+        if (syns.some(s => texto.includes(s)) || texto.includes(termo)) score += 20;
+      }
+    });
+  });
+
+  return Math.min(Math.round(score), 100);
+}
+
+/* ── Busca de resolução ────────────────────────────────────────────────────── */
+function doSearch(queryOverride) {
+  const input = document.getElementById('search-input');
+  const query = (queryOverride !== undefined ? queryOverride : input.value).trim();
+  if (queryOverride !== undefined) input.value = query;
+
+  const container = document.getElementById('search-results');
+
+  if (!query) {
+    container.innerHTML = '';
+    return;
+  }
+
+  const scored = solvedBase
+    .map(t => ({ ...t, score: calcularSimilaridade(query, t) }))
+    .filter(t => t.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 5);
+
+  if (!scored.length) {
+    container.innerHTML = '<div class="empty-state">Nenhum chamado similar encontrado. Tente outros termos.</div>';
+    return;
+  }
+
+  container.innerHTML = scored.map(t => {
+    const daysAgo = Math.round((Date.now() - new Date(t.solved_at).getTime()) / 86400000);
+    const resolution = t.resolution || '<em style="color:var(--muted)">Resolução não documentada</em>';
+    const tags = (t.tags || []).map(tag => `<span class="tag">${escHtml(tag)}</span>`).join('');
+    return `
+      <div class="result-item" onclick="openResolvedModal(${t.id})">
+        <div class="result-header">
+          <div class="result-score">
+            <div class="score-value">${t.score}%</div>
+            <div class="score-bar"><div class="score-fill" style="width:${t.score}%"></div></div>
+          </div>
+          <div>
+            <div class="result-title">${escHtml(t.subject)}</div>
+            <div class="result-client">${escHtml(t.organization_name || '—')}</div>
+          </div>
+        </div>
+        <div class="result-meta">#${t.id} &nbsp;·&nbsp; Resolvido ${daysAgo}d atrás &nbsp;·&nbsp; Agente: ${escHtml(t.agent_name)}</div>
+        <div class="result-resolution">${escHtml(typeof resolution === 'string' ? resolution : '')}</div>
+        ${tags ? `<div class="result-tags">${tags}</div>` : ''}
+      </div>`;
+  }).join('');
+}
+
+document.getElementById('search-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') doSearch();
+});
+
+/* ── Modal ─────────────────────────────────────────────────────────────────── */
+async function openModal(ticketId) {
+  const ticket = openTickets.find(t => t.id === ticketId)
+              || solvedBase.find(t => t.id === ticketId);
+  if (!ticket) return;
+  modalTicket = ticket;
+
+  document.getElementById('modal-title').textContent = ticket.subject;
+  document.getElementById('modal-id').innerHTML =
+    `<span class="mono">#${ticket.id}</span>` +
+    ` &nbsp;·&nbsp; ${ticket.status || '—'}` +
+    ` &nbsp;·&nbsp; Canal: ${ticket.via?.channel || '—'}`;
+
+  // Meta grid
+  const sla = slaLabel(ticket);
+  document.getElementById('modal-meta').innerHTML = `
+    <div class="meta-item"><div class="meta-label">Cliente</div><div class="meta-value">${escHtml(ticket.organization_name || '—')}</div></div>
+    <div class="meta-item"><div class="meta-label">Prioridade</div><div class="meta-value">${priorityLabel(ticket.priority)}</div></div>
+    <div class="meta-item"><div class="meta-label">Tempo aberto</div><div class="meta-value"><span class="time-open ${timeClass(ticket.created_at)}">${tempoAberto(ticket.created_at)}</span></div></div>
+    <div class="meta-item"><div class="meta-label">Agente</div><div class="meta-value">${ticket.assignee_id ? (agentsData.find(a => a.id === ticket.assignee_id)?.name || `#${ticket.assignee_id}`) : '<span class="no-agent">— sem agente</span>'}</div></div>
+    <div class="meta-item"><div class="meta-label">SLA restante</div><div class="meta-value"><span class="sla-remaining ${sla.cls}">${sla.text}</span></div></div>
+    <div class="meta-item"><div class="meta-label">Tags</div><div class="meta-value" style="display:flex;flex-wrap:wrap;gap:4px;margin-top:2px;">${(ticket.tags || []).map(t => `<span class="tag">${escHtml(t)}</span>`).join('')}</div></div>
+  `;
+
+  // Resolução (campo customizado ou da base)
+  const resSection = document.getElementById('modal-resolution');
+  const resBox     = document.getElementById('modal-resolution-box');
+  const resolution = ticket.resolution
+    || (ticket.custom_fields || []).find(f => f.value)?.value;
+  if (resolution) {
+    resBox.textContent = resolution;
+    resSection.style.display = 'block';
+  } else {
+    resSection.style.display = 'none';
+  }
+
+  // Comentários
+  const conv = document.getElementById('modal-conversation');
+  conv.innerHTML = '<div class="empty-state">Carregando conversa...</div>';
+
+  document.getElementById('modal-overlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+
+  try {
+    const res = await fetch(`/api/tickets/${ticketId}/comments`);
+    const data = await res.json();
+    renderConversation(data.comments || [], conv);
+  } catch {
+    conv.innerHTML = '<div class="empty-state text-muted">Não foi possível carregar a conversa.</div>';
+  }
+}
+
+async function openResolvedModal(ticketId) {
+  // Para tickets resolvidos da base
+  const solved = solvedBase.find(t => t.id === ticketId);
+  if (solved) {
+    // Criar objeto compatível com openModal
+    const ticket = {
+      id: solved.id,
+      subject: solved.subject,
+      status: 'solved',
+      priority: solved.priority,
+      tags: solved.tags,
+      organization_name: solved.organization_name,
+      assignee_id: null,
+      via: { channel: '—' },
+      created_at: solved.solved_at,
+      resolution: solved.resolution,
+      sla_policy: null,
+    };
+    // Encontrar agente pelo nome
+    const agentMatch = agentsData.find(a => a.name === solved.agent_name);
+    if (agentMatch) ticket.assignee_id = agentMatch.id;
+
+    openTickets_temp = [...openTickets];
+    openTickets.push(ticket);
+    await openModal(ticketId);
+    openTickets = openTickets_temp;
+    return;
+  }
+  openModal(ticketId);
+}
+let openTickets_temp = [];
+
+function renderConversation(comments, container) {
+  if (!comments.length) {
+    container.innerHTML = '<div class="empty-state">Sem comentários.</div>';
+    return;
+  }
+  container.innerHTML = comments.map(c => {
+    const isAgent = agentsData.some(a => a.id === c.author_id);
+    const cls = isAgent ? 'agent' : 'user';
+    const who = isAgent ? 'Agente' : 'Usuário';
+    const dt = new Date(c.created_at).toLocaleString('pt-BR');
+    return `
+      <div>
+        <div class="comment ${cls}">
+          <div class="comment-meta">${who} · ${dt}</div>
+          ${escHtml(c.body)}
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('open');
+  document.body.style.overflow = '';
+  modalTicket = null;
+}
+
+function handleOverlayClick(e) {
+  if (e.target === document.getElementById('modal-overlay')) closeModal();
+}
+
+function searchFromModal() {
+  if (!modalTicket) return;
+  closeModal();
+  const input = document.getElementById('search-input');
+  input.value = modalTicket.subject;
+  doSearch(modalTicket.subject);
+  input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+/* ── Utilitário HTML escape ────────────────────────────────────────────────── */
+function escHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+/* ── Carregamento de dados ─────────────────────────────────────────────────── */
+async function loadStatus() {
+  try {
+    const res = await fetch('/api/status');
+    const data = await res.json();
+    isMock = data.mock;
+    const badge = document.getElementById('badge-mode');
+    badge.textContent = isMock ? 'MOCK' : 'LIVE';
+    badge.className = 'badge-mode ' + (isMock ? 'mock' : 'live');
+    if (isMock) document.getElementById('demo-banner').classList.add('visible');
+  } catch { /* silencioso */ }
+}
+
+async function loadData() {
+  try {
+    const [ticketsRes, agentsRes, kpisRes] = await Promise.all([
+      fetch('/api/tickets/open'),
+      fetch('/api/agents'),
+      fetch('/api/kpis'),
+    ]);
+    const [ticketsData, agentsData_, kpisData] = await Promise.all([
+      ticketsRes.json(),
+      agentsRes.json(),
+      kpisRes.json(),
+    ]);
+
+    openTickets = ticketsData.tickets || [];
+    agentsData  = agentsData_.agents  || [];
+
+    renderKPIs(kpisData);
+    renderQueue(openTickets);
+    renderAgents(agentsData);
+  } catch (err) {
+    console.error('Erro ao carregar dados:', err);
+  }
+}
+
+async function loadSolved() {
+  if (solvedBase.length && Date.now() - solvedLoadedAt < CACHE_SOLVED_TTL) return;
+  try {
+    const res = await fetch('/api/tickets/solved');
+    const data = await res.json();
+    solvedBase = data.tickets || [];
+    solvedLoadedAt = Date.now();
+  } catch (err) {
+    console.error('Erro ao carregar base de resoluções:', err);
+  }
+}
+
+/* ── Init ──────────────────────────────────────────────────────────────────── */
+async function init() {
+  startClock();
+  await loadStatus();
+  await Promise.all([loadData(), loadSolved()]);
+
+  // Refresh automático silencioso
+  const ttl = 5 * 60 * 1000;
+  setInterval(loadData, ttl);
+  setInterval(loadSolved, CACHE_SOLVED_TTL);
+
+  // Atualizar tempos abertos a cada 30s (sem buscar API)
+  setInterval(() => {
+    if (openTickets.length) renderQueue(openTickets);
+  }, 30000);
+}
+
+init();
+</script>
+</body>
+</html>

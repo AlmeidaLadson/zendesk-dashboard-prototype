@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SKA Gerencial</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="header">
+  <div class="header-logo">SKA <span>Gerencial</span></div>
+  <span id="badge-mode" class="badge-mode mock">MOCK</span>
+  <div class="header-spacer"></div>
+
+  <!-- Selector de período -->
+  <div class="period-selector">
+    <button class="period-btn active" data-days="7" onclick="onPeriodChange(7)">7 dias</button>
+    <button class="period-btn" data-days="30" onclick="onPeriodChange(30)">30 dias</button>
+    <button class="period-btn" data-days="90" onclick="onPeriodChange(90)">90 dias</button>
+  </div>
+
+  <nav class="nav-views">
+    <a href="/">N1</a>
+    <a href="/gerencial.html" class="active">Gerencial</a>
+  </nav>
+</header>
+
+<!-- BANNER DEMO -->
+<div id="demo-banner" class="demo-banner">
+  Modo demonstração — dados simulados. Configure as credenciais no arquivo <strong>.env</strong> para conectar ao Zendesk.
+</div>
+
+<main class="main">
+
+  <!-- KPI LINHA 1: Estado atual -->
+  <h3 style="margin-bottom:0.6rem;">Estado atual</h3>
+  <div class="kpi-row" style="margin-bottom:0.75rem;">
+    <div class="kpi-card">
+      <div class="kpi-label">Tickets abertos</div>
+      <div id="kpi-open" class="kpi-value">—</div>
+      <div class="kpi-sub">Total em aberto agora</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">SLA violados</div>
+      <div id="kpi-breached" class="kpi-value">—</div>
+      <div class="kpi-sub">Breach no passado</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Tempo médio 1ª resp</div>
+      <div id="kpi-first-reply" class="kpi-value">—</div>
+      <div class="kpi-sub">Últimos 7 dias (min)</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">CSAT</div>
+      <div id="kpi-csat" class="kpi-value">—</div>
+      <div class="kpi-sub">Últimos 30 dias</div>
+    </div>
+  </div>
+
+  <!-- KPI LINHA 2: Período selecionado -->
+  <h3 style="margin-bottom:0.6rem;" id="period-label">Período: 7 dias</h3>
+  <div class="kpi-row">
+    <div class="kpi-card">
+      <div class="kpi-label">Resolvidos no período</div>
+      <div id="kpi-resolved" class="kpi-value">—</div>
+      <div class="kpi-sub">Status solved</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Tempo médio resolução</div>
+      <div id="kpi-avg-res" class="kpi-value">—</div>
+      <div class="kpi-sub">horas</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Reabertos</div>
+      <div id="kpi-reopened" class="kpi-value">—</div>
+      <div class="kpi-sub">Voltaram de solved</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Sem agente (máx)</div>
+      <div id="kpi-unassigned" class="kpi-value">—</div>
+      <div class="kpi-sub">Pico no período</div>
+    </div>
+  </div>
+
+  <!-- VOLUME POR CLIENTE -->
+  <div class="card mb-1 mt-1">
+    <div class="card-header">
+      <h2>Volume por Cliente</h2>
+      <span id="client-reset" style="font-size:0.78rem;color:var(--blue);cursor:pointer;display:none;" onclick="clearClientFilter()">Limpar filtro</span>
+    </div>
+    <div class="card-body">
+      <div id="client-volume"></div>
+    </div>
+  </div>
+
+  <!-- TEMPO EM ABERTO + STATUS SLA -->
+  <div class="grid-two">
+    <div class="card">
+      <div class="card-header"><h2>Tempo em Aberto</h2></div>
+      <div class="card-body">
+        <div id="time-distribution"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><h2>Status de SLA</h2></div>
+      <div class="card-body" id="sla-status"></div>
+    </div>
+  </div>
+
+  <!-- DESEMPENHO DA EQUIPE -->
+  <div class="card mb-1 mt-1">
+    <div class="card-header"><h2>Desempenho da Equipe</h2></div>
+    <div style="overflow-x:auto;">
+      <table class="perf-table" id="perf-table">
+        <thead>
+          <tr>
+            <th>Agente</th>
+            <th>Resolvidos no período</th>
+            <th>Tempo médio 1ª resp</th>
+            <th>Ticket mais antigo em aberto</th>
+          </tr>
+        </thead>
+        <tbody id="perf-body">
+          <tr><td colspan="4" class="empty-state">Carregando...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- TICKETS CRÍTICOS -->
+  <div class="card">
+    <div class="card-header"><h2>Tickets Críticos</h2></div>
+    <div style="padding:0.75rem 1.25rem 0;">
+      <div class="filter-bar">
+        <button class="filter-btn active" data-filter="all" onclick="applyFilter('all')">Todos</button>
+        <button class="filter-btn" data-filter="sla-risk" onclick="applyFilter('sla-risk')">SLA em risco</button>
+        <button class="filter-btn" data-filter="sla-breach" onclick="applyFilter('sla-breach')">SLA violado</button>
+        <button class="filter-btn" data-filter="no-agent" onclick="applyFilter('no-agent')">Sem agente</button>
+        <button class="filter-btn" data-filter="old" onclick="applyFilter('old')">Mais de 3 dias</button>
+      </div>
+    </div>
+    <div style="overflow-x:auto;">
+      <table class="ticket-table" id="critical-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Assunto</th>
+            <th>Cliente</th>
+            <th>Prioridade</th>
+            <th>Agente</th>
+            <th>Tempo aberto</th>
+            <th>SLA restante</th>
+          </tr>
+        </thead>
+        <tbody id="critical-body">
+          <tr><td colspan="7" class="empty-state">Carregando...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</main>
+
+<script>
+/* ── Estado global ─────────────────────────────────────────────────────────── */
+let period       = 7;
+let openTickets  = [];
+let solvedBase   = [];
+let agentsData   = [];
+let clientFilter = null;
+let activeFilter = 'all';
+
+/* ── Utilitários ───────────────────────────────────────────────────────────── */
+function escHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function tempoAberto(created_at) {
+  const diff = Date.now() - new Date(created_at).getTime();
+  const h = Math.floor(diff / 3600000);
+  const m = Math.floor((diff % 3600000) / 60000);
+  const d = Math.floor(h / 24);
+  if (h === 0) return `${m}min`;
+  if (h < 24)  return `${h}h${m > 0 ? m + 'm' : ''}`;
+  return `${d}d ${h % 24}h`;
+}
+
+function timeClass(created_at) {
+  const h = (Date.now() - new Date(created_at).getTime()) / 3600000;
+  if (h < 2)  return 'green';
+  if (h < 8)  return 'yellow';
+  return 'red';
+}
+
+function slaLabel(ticket) {
+  const metric = ticket.sla_policy?.policy_metrics?.[0];
+  if (!metric || !metric.breach_at) return { text: '—', cls: '' };
+  const now    = Date.now();
+  const breach = new Date(metric.breach_at).getTime();
+  const diff   = breach - now;
+  if (diff < 0) {
+    const m = Math.abs(Math.floor(diff / 60000));
+    return { text: `Violado ${m}min`, cls: 'breach' };
+  }
+  const h = Math.floor(diff / 3600000);
+  const m = Math.floor((diff % 3600000) / 60000);
+  const text = h > 0 ? `${h}h${m}m` : `${m}min`;
+  if (diff < 60 * 60 * 1000)     return { text, cls: 'danger' };
+  if (diff < 2 * 60 * 60 * 1000) return { text, cls: 'warn' };
+  return { text, cls: 'ok' };
+}
+
+function priorityLabel(p) {
+  const labels = { urgent: 'Urgente', high: 'Alta', normal: 'Normal', low: 'Baixa' };
+  return `<span class="priority ${p || 'normal'}">${labels[p] || p || 'Normal'}</span>`;
+}
+
+function filterByPeriod(tickets, days) {
+  const cutoff = Date.now() - days * 86400000;
+  return tickets.filter(t => new Date(t.updated_at || t.solved_at).getTime() >= cutoff);
+}
+
+/* ── Status ────────────────────────────────────────────────────────────────── */
+async function loadStatus() {
+  try {
+    const res = await fetch('/api/status');
+    const data = await res.json();
+    const badge = document.getElementById('badge-mode');
+    badge.textContent = data.mock ? 'MOCK' : 'LIVE';
+    badge.className = 'badge-mode ' + (data.mock ? 'mock' : 'live');
+    if (data.mock) document.getElementById('demo-banner').classList.add('visible');
+  } catch { /* silencioso */ }
+}
+
+/* ── KPIs ──────────────────────────────────────────────────────────────────── */
+function renderKPIs(kpis, solvedPeriod) {
+  // Linha 1
+  const openEl = document.getElementById('kpi-open');
+  openEl.textContent = kpis.open;
+  openEl.className = 'kpi-value' + (kpis.open > 30 ? ' danger' : '');
+
+  const breachedEl = document.getElementById('kpi-breached');
+  breachedEl.textContent = kpis.slaBreached;
+  breachedEl.className = 'kpi-value' + (kpis.slaBreached > 0 ? ' danger' : ' ok');
+
+  const frEl = document.getElementById('kpi-first-reply');
+  frEl.textContent = kpis.avgFirstReplyMinutes != null ? kpis.avgFirstReplyMinutes + 'min' : '—';
+  frEl.className = 'kpi-value' + (kpis.avgFirstReplyMinutes != null && kpis.avgFirstReplyMinutes < 60 ? ' ok' : ' warn');
+
+  const csatEl = document.getElementById('kpi-csat');
+  csatEl.textContent = kpis.csat != null ? kpis.csat + '%' : '—';
+  csatEl.className = 'kpi-value' + (kpis.csat != null && kpis.csat >= 90 ? ' ok' : ' warn');
+
+  // Linha 2
+  document.getElementById('kpi-resolved').textContent   = solvedPeriod.length;
+  document.getElementById('kpi-reopened').textContent   = kpis.reopened || 0;
+  document.getElementById('kpi-unassigned').textContent = kpis.unassigned;
+
+  const avgRes = solvedPeriod.reduce((acc, t) => {
+    const created = new Date(t.created_at || t.solved_at).getTime();
+    const solved  = new Date(t.updated_at  || t.solved_at).getTime();
+    return acc + (solved - created) / 3600000;
+  }, 0) / (solvedPeriod.length || 1);
+  document.getElementById('kpi-avg-res').textContent = solvedPeriod.length
+    ? Math.round(avgRes * 10) / 10 + 'h'
+    : '—';
+}
+
+/* ── Volume por cliente ────────────────────────────────────────────────────── */
+function renderClientVolume(tickets) {
+  const counts = {};
+  tickets.forEach(t => {
+    const name = t.organization_name || 'Sem organização';
+    counts[name] = (counts[name] || 0) + 1;
+  });
+  const total = Object.values(counts).reduce((a, b) => a + b, 0) || 1;
+  const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+  const max = sorted[0]?.[1] || 1;
+
+  document.getElementById('client-volume').innerHTML = sorted.map(([name, count]) => {
+    const pct = Math.round((count / total) * 100);
+    const barPct = Math.round((count / max) * 100);
+    const isActive = clientFilter === name ? ' active' : '';
+    return `
+      <div class="client-bar-item${isActive}" onclick="toggleClientFilter('${escHtml(name)}')">
+        <span class="client-name">${escHtml(name)}</span>
+        <div class="client-bar-track">
+          <div class="client-bar-fill" style="width:${barPct}%"></div>
+        </div>
+        <span class="client-count">${count}</span>
+        <span class="client-pct">${pct}%</span>
+      </div>`;
+  }).join('');
+}
+
+function toggleClientFilter(name) {
+  clientFilter = clientFilter === name ? null : name;
+  document.getElementById('client-reset').style.display = clientFilter ? 'inline' : 'none';
+  renderAll();
+}
+
+function clearClientFilter() {
+  clientFilter = null;
+  document.getElementById('client-reset').style.display = 'none';
+  renderAll();
+}
+
+/* ── Distribuição de tempo em aberto ──────────────────────────────────────── */
+function renderTimeDistribution(tickets) {
+  const now = Date.now();
+  const buckets = [
+    { label: '< 4h',     min: 0,   max: 4,   cls: 'ok',     alert: null },
+    { label: '4–24h',    min: 4,   max: 24,  cls: 'ok',     alert: null },
+    { label: '1–3 dias', min: 24,  max: 72,  cls: 'warn',   alert: 'ALERTA' },
+    { label: '> 3 dias', min: 72,  max: Inf, cls: 'danger', alert: 'CRÍTICO' },
+  ];
+  const Inf = Infinity;
+
+  const counts = buckets.map(b => ({
+    ...b,
+    count: tickets.filter(t => {
+      const h = (now - new Date(t.created_at).getTime()) / 3600000;
+      return h >= b.min && h < b.max;
+    }).length,
+  }));
+  const max = Math.max(...counts.map(c => c.count), 1);
+
+  document.getElementById('time-distribution').innerHTML = counts.map(b => {
+    const pct = Math.round((b.count / max) * 100);
+    return `
+      <div class="dist-item">
+        <span class="dist-label">${b.label}</span>
+        <div class="dist-bar-track">
+          <div class="dist-bar-fill ${b.cls}" style="width:${pct}%"></div>
+        </div>
+        <span class="dist-count">${b.count}</span>
+        ${b.alert && b.count > 0 ? `<span class="dist-alert ${b.cls}">${b.alert}</span>` : '<span style="width:52px;flex-shrink:0;"></span>'}
+      </div>`;
+  }).join('');
+}
+
+/* ── Status de SLA ─────────────────────────────────────────────────────────── */
+function renderSLAStatus(tickets) {
+  const now = Date.now();
+  let ok = 0, risk = 0, breach = 0;
+
+  tickets.forEach(t => {
+    const metric = t.sla_policy?.policy_metrics?.[0];
+    if (!metric || !metric.breach_at) { ok++; return; }
+    const diff = new Date(metric.breach_at).getTime() - now;
+    if (diff < 0) breach++;
+    else if (diff < 60 * 60 * 1000) risk++;
+    else ok++;
+  });
+
+  const total = ok + risk + breach || 1;
+  const pct = Math.round((ok / total) * 100);
+
+  document.getElementById('sla-status').innerHTML = `
+    <div style="margin-bottom:1rem;">
+      <div style="font-size:0.78rem;color:var(--muted);margin-bottom:4px;">SLA cumprido</div>
+      <div class="sla-pct-main">${pct}%</div>
+    </div>
+    <div class="sla-row">
+      <div class="sla-number ok">${ok}</div>
+      <div class="sla-row-label">Dentro do prazo</div>
+    </div>
+    <div class="sla-row">
+      <div class="sla-number warn">${risk}</div>
+      <div class="sla-row-label">Em risco (&lt; 2h)</div>
+    </div>
+    <div class="sla-row">
+      <div class="sla-number danger">${breach}</div>
+      <div class="sla-row-label">Violados</div>
+    </div>`;
+}
+
+/* ── Desempenho da equipe ─────────────────────────────────────────────────── */
+function renderTeamPerformance(agents, tickets, solved) {
+  const body = document.getElementById('perf-body');
+
+  if (!agents.length) {
+    body.innerHTML = '<tr><td colspan="4" class="empty-state">Sem dados de agentes.</td></tr>';
+    return;
+  }
+
+  body.innerHTML = agents.map(agent => {
+    const resolvedByAgent = solved.filter(t => t.assignee_id === agent.id || t.agent_name === agent.name);
+    const openByAgent = tickets.filter(t => t.assignee_id === agent.id);
+    const oldest = openByAgent.sort((a, b) => new Date(a.created_at) - new Date(b.created_at))[0];
+
+    // Tempo médio de 1ª resposta (simulado — em produção viria da API)
+    const avgReply = agent.id === 101 ? '32min' : agent.id === 102 ? '51min' : '44min';
+
+    const oldestCell = oldest
+      ? `<span class="time-open ${timeClass(oldest.created_at)}">${tempoAberto(oldest.created_at)}</span> <span style="font-size:0.78rem;color:var(--muted);">#${oldest.id}</span>`
+      : '<span class="text-muted">—</span>';
+
+    return `
+      <tr>
+        <td>
+          <div style="display:flex;align-items:center;gap:0.5rem;">
+            <div class="agent-avatar" style="width:28px;height:28px;font-size:0.75rem;">${agent.name.charAt(0)}</div>
+            <span style="font-size:0.85rem;font-weight:500;">${escHtml(agent.name)}</span>
+          </div>
+        </td>
+        <td><span class="font-mono">${resolvedByAgent.length}</span></td>
+        <td><span class="font-mono">${avgReply}</span></td>
+        <td>${oldestCell}</td>
+      </tr>`;
+  }).join('');
+}
+
+/* ── Filtros ───────────────────────────────────────────────────────────────── */
+function applyFilter(filter) {
+  activeFilter = filter;
+  document.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.filter === filter);
+  });
+  renderCriticalTickets(openTickets);
+}
+
+function renderCriticalTickets(tickets) {
+  const now = Date.now();
+  let filtered = clientFilter
+    ? tickets.filter(t => t.organization_name === clientFilter)
+    : tickets;
+
+  switch (activeFilter) {
+    case 'sla-risk':
+      filtered = filtered.filter(t => {
+        const metric = t.sla_policy?.policy_metrics?.[0];
+        if (!metric) return false;
+        const diff = new Date(metric.breach_at).getTime() - now;
+        return diff > 0 && diff < 60 * 60 * 1000;
+      });
+      break;
+    case 'sla-breach':
+      filtered = filtered.filter(t => {
+        const metric = t.sla_policy?.policy_metrics?.[0];
+        return metric && new Date(metric.breach_at).getTime() < now;
+      });
+      break;
+    case 'no-agent':
+      filtered = filtered.filter(t => !t.assignee_id);
+      break;
+    case 'old':
+      filtered = filtered.filter(t =>
+        (now - new Date(t.created_at).getTime()) / 86400000 > 3
+      );
+      break;
+  }
+
+  // Ordenar: violados → sem agente → mais antigos
+  filtered.sort((a, b) => {
+    const aM = a.sla_policy?.policy_metrics?.[0];
+    const bM = b.sla_policy?.policy_metrics?.[0];
+    const aBreached = aM && new Date(aM.breach_at).getTime() < now ? 1 : 0;
+    const bBreached = bM && new Date(bM.breach_at).getTime() < now ? 1 : 0;
+    if (bBreached !== aBreached) return bBreached - aBreached;
+    if (!a.assignee_id && b.assignee_id) return -1;
+    if (a.assignee_id && !b.assignee_id) return 1;
+    return new Date(a.created_at) - new Date(b.created_at);
+  });
+
+  const body = document.getElementById('critical-body');
+
+  if (!filtered.length) {
+    body.innerHTML = '<tr><td colspan="7" class="empty-state">Nenhum ticket nesta categoria.</td></tr>';
+    return;
+  }
+
+  body.innerHTML = filtered.map(t => {
+    const sla = slaLabel(t);
+    const tc  = timeClass(t.created_at);
+    const agentName = t.assignee_id
+      ? (agentsData.find(a => a.id === t.assignee_id)?.name || `#${t.assignee_id}`)
+      : '<span class="no-agent">— sem agente</span>';
+
+    return `
+      <tr>
+        <td class="ticket-id">${t.id}</td>
+        <td style="font-weight:500;font-size:0.84rem;">${escHtml(t.subject)}</td>
+        <td style="font-size:0.82rem;">${escHtml(t.organization_name || '—')}</td>
+        <td>${priorityLabel(t.priority)}</td>
+        <td style="font-size:0.82rem;">${agentName}</td>
+        <td><span class="time-open ${tc}">${tempoAberto(t.created_at)}</span></td>
+        <td><span class="sla-remaining ${sla.cls}">${sla.text}</span></td>
+      </tr>`;
+  }).join('');
+}
+
+/* ── Render completo ───────────────────────────────────────────────────────── */
+function renderAll() {
+  const filtered = clientFilter
+    ? openTickets.filter(t => t.organization_name === clientFilter)
+    : openTickets;
+  const solvedPeriod = filterByPeriod(solvedBase, period);
+
+  renderClientVolume(openTickets); // barras sempre com total
+  renderTimeDistribution(filtered);
+  renderSLAStatus(filtered);
+  renderCriticalTickets(openTickets);
+}
+
+/* ── Período ───────────────────────────────────────────────────────────────── */
+function onPeriodChange(days) {
+  period = days;
+  document.querySelectorAll('.period-btn').forEach(btn => {
+    btn.classList.toggle('active', parseInt(btn.dataset.days) === days);
+  });
+  document.getElementById('period-label').textContent = `Período: ${days} dias`;
+  loadAll();
+}
+
+/* ── Carregamento ──────────────────────────────────────────────────────────── */
+async function loadAll() {
+  try {
+    const [kpisRes, openRes, solvedRes, agentsRes] = await Promise.all([
+      fetch('/api/kpis'),
+      fetch('/api/tickets/open'),
+      fetch('/api/tickets/solved'),
+      fetch('/api/agents'),
+    ]);
+    const [kpisData, openData, solvedData, agentsD] = await Promise.all([
+      kpisRes.json(),
+      openRes.json(),
+      solvedRes.json(),
+      agentsRes.json(),
+    ]);
+
+    openTickets = openData.tickets  || [];
+    solvedBase  = solvedData.tickets || [];
+    agentsData  = agentsD.agents    || [];
+
+    const solvedPeriod = filterByPeriod(solvedBase, period);
+
+    renderKPIs(kpisData, solvedPeriod);
+    renderClientVolume(openTickets);
+    renderTimeDistribution(openTickets);
+    renderSLAStatus(openTickets);
+    renderTeamPerformance(agentsData, openTickets, solvedPeriod);
+    renderCriticalTickets(openTickets);
+
+  } catch (err) {
+    console.error('Erro ao carregar dados gerenciais:', err);
+  }
+}
+
+/* ── Init ──────────────────────────────────────────────────────────────────── */
+async function init() {
+  await loadStatus();
+  await loadAll();
+
+  const ttl = 5 * 60 * 1000;
+  setInterval(loadAll, ttl);
+
+  // Atualizar tempos a cada 30s
+  setInterval(() => {
+    if (openTickets.length) {
+      renderTimeDistribution(clientFilter ? openTickets.filter(t => t.organization_name === clientFilter) : openTickets);
+      renderSLAStatus(clientFilter ? openTickets.filter(t => t.organization_name === clientFilter) : openTickets);
+      renderCriticalTickets(openTickets);
+    }
+  }, 30000);
+}
+
+init();
+</script>
+</body>
+</html>
