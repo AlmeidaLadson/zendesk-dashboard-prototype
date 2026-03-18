@@ -176,7 +176,7 @@
   </div>
 
   <!-- TICKETS CRÍTICOS -->
-  <div class="card">
+  <div class="card" id="card-critical">
     <div class="card-header"><h2>Tickets Críticos</h2></div>
     <div style="padding:0.75rem 1.25rem 0;">
       <div class="filter-bar">
@@ -432,7 +432,7 @@ function toggleClientFilter(name) {
   document.getElementById('client-reset').style.display = clientFilter ? 'inline' : 'none';
   renderAll();
   if (clientFilter) {
-    document.querySelector('.card:has(#critical-body)').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    document.getElementById('card-critical').scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 }
 
@@ -553,7 +553,7 @@ function toggleTagFilter(tag) {
   renderRecurringTags(solvedPeriod);
   renderCriticalTickets(openTickets);
   if (activeTagFilter) {
-    document.querySelector('.card:has(#critical-body)').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    document.getElementById('card-critical').scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 }
 
