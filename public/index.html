@@ -16,6 +16,7 @@
   <div class="header-logo">SKA <span>Suporte N1</span></div>
   <span id="badge-mode" class="badge-mode mock">MOCK</span>
   <div class="header-spacer"></div>
+  <span id="update-ts" class="update-ts"></span>
   <span id="clock" class="header-clock"></span>
   <nav class="nav-views">
     <a href="/" class="active">N1</a>
@@ -35,39 +36,52 @@
     <div class="kpi-card">
       <div class="kpi-label">Tickets abertos</div>
       <div id="kpi-open" class="kpi-value">—</div>
-      <div class="kpi-sub" id="kpi-open-sub"></div>
+      <div class="kpi-sub" id="kpi-open-sub">tickets aguardando</div>
+      <div class="kpi-trend" id="kpi-open-trend"></div>
     </div>
     <div class="kpi-card">
       <div class="kpi-label">Sem agente</div>
       <div id="kpi-unassigned" class="kpi-value">—</div>
       <div class="kpi-sub">Aguardando atribuição</div>
+      <div class="kpi-trend" id="kpi-unassigned-trend"></div>
     </div>
     <div class="kpi-card">
       <div class="kpi-label">Resolvidos hoje</div>
       <div id="kpi-solved-today" class="kpi-value">—</div>
       <div class="kpi-sub">Fechados no dia</div>
+      <div class="kpi-trend" id="kpi-solved-trend"></div>
     </div>
     <div class="kpi-card">
       <div class="kpi-label">SLA em risco</div>
       <div id="kpi-sla-risk" class="kpi-value">—</div>
       <div class="kpi-sub">Breach &lt; 60min</div>
+      <div class="kpi-trend" id="kpi-sla-trend"></div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">1ª Resposta Média</div>
+      <div id="kpi-avg-reply" class="kpi-value">—</div>
+      <div class="kpi-sub">Últimos 7 dias (min)</div>
+      <div class="kpi-trend" id="kpi-reply-trend"></div>
     </div>
   </div>
 
   <!-- BUSCA DE RESOLUÇÃO -->
   <div class="search-card">
     <div style="margin-bottom:0.75rem;">
-      <h2 style="font-size:0.9rem;">Busca de Resolução</h2>
-      <p style="font-size:0.78rem;color:var(--muted);margin-top:2px;">Encontre chamados similares já resolvidos</p>
+      <h2 class="section-title">Busca de Resolução</h2>
+      <p style="font-size:0.78rem;color:var(--muted);margin-top:2px;">Encontre chamados similares já resolvidos — pressione <kbd>/</kbd> para focar</p>
     </div>
     <div class="search-row">
-      <input
-        id="search-input"
-        class="search-input"
-        type="text"
-        placeholder="Cole aqui o problema do chamado atual..."
-        autocomplete="off"
-      >
+      <div class="search-wrapper">
+        <input
+          id="search-input"
+          class="search-input"
+          type="text"
+          placeholder="Cole aqui o problema do chamado atual..."
+          autocomplete="off"
+        >
+        <div id="search-history-dd" class="search-history-dd" style="display:none;"></div>
+      </div>
       <button class="btn-primary" onclick="doSearch()">Buscar</button>
     </div>
     <div id="search-results" class="search-results"></div>
@@ -96,7 +110,9 @@
             </tr>
           </thead>
           <tbody id="queue-body">
-            <tr><td colspan="7" class="empty-state">Carregando...</td></tr>
+            <tr><td colspan="7"><span class="skeleton" style="height:18px;width:100%;display:block;"></span></td></tr>
+            <tr><td colspan="7"><span class="skeleton" style="height:18px;width:90%;display:block;"></span></td></tr>
+            <tr><td colspan="7"><span class="skeleton" style="height:18px;width:95%;display:block;"></span></td></tr>
           </tbody>
         </table>
       </div>
@@ -109,7 +125,9 @@
       </div>
       <div class="card-body">
         <div id="agent-list" class="agent-list">
-          <div class="empty-state">Carregando...</div>
+          <div class="skeleton" style="height:40px;width:100%;margin-bottom:8px;"></div>
+          <div class="skeleton" style="height:40px;width:100%;margin-bottom:8px;"></div>
+          <div class="skeleton" style="height:40px;width:100%;"></div>
         </div>
       </div>
     </div>
@@ -142,15 +160,44 @@
   </div>
 </div>
 
+<!-- ATALHOS -->
+<footer class="shortcuts-footer">
+  <span><kbd>/</kbd> Focar busca</span>
+  <span><kbd>Esc</kbd> Fechar modal</span>
+  <span><kbd>R</kbd> Atualizar dados</span>
+</footer>
+
 <script>
 /* ── Estado global ─────────────────────────────────────────────────────────── */
-let openTickets = [];
-let solvedBase  = [];
-let agentsData  = [];
-let modalTicket = null;
-let isMock      = false;
+let openTickets  = [];
+let solvedBase   = [];
+let agentsData   = [];
+let modalTicket  = null;
+let isMock       = false;
+let prevKPIs     = null;
+let searchDebounceTimer = null;
 const CACHE_SOLVED_TTL = 30 * 60 * 1000;
 let solvedLoadedAt = 0;
+const HISTORY_KEY = 'ska_search_history';
+
+/* ── Timestamp de atualização ──────────────────────────────────────────────── */
+function setUpdating() {
+  const el = document.getElementById('update-ts');
+  el.textContent = 'Atualizando...';
+  el.classList.add('updating');
+}
+
+function setUpdated() {
+  const el = document.getElementById('update-ts');
+  el.classList.remove('updating');
+  tickUpdateLabel();
+}
+
+function tickUpdateLabel() {
+  const el = document.getElementById('update-ts');
+  const now = new Date();
+  el.textContent = `Atualizado às ${now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
+}
 
 /* ── Relógio ───────────────────────────────────────────────────────────────── */
 function startClock() {
@@ -161,6 +208,19 @@ function startClock() {
   };
   tick();
   setInterval(tick, 1000);
+}
+
+/* ── Indicadores de tendência ──────────────────────────────────────────────── */
+function renderTrend(elId, current, prev, lowerIsBetter) {
+  const el = document.getElementById(elId);
+  if (!el || prev == null || current == null) { if (el) el.textContent = ''; return; }
+  const diff = current - prev;
+  if (diff === 0) { el.innerHTML = '<span class="flat">= Estável</span>'; el.className = 'kpi-trend flat'; return; }
+  const arrow = diff > 0 ? '▲' : '▼';
+  const absDiff = Math.abs(diff);
+  const isGood = lowerIsBetter ? diff < 0 : diff > 0;
+  el.className = 'kpi-trend ' + (isGood ? 'up-good' : 'up-bad');
+  el.textContent = `${arrow} ${absDiff}`;
 }
 
 /* ── Formato de tempo aberto ───────────────────────────────────────────────── */
@@ -179,6 +239,17 @@ function timeClass(created_at) {
   if (h < 2)  return 'green';
   if (h < 8)  return 'yellow';
   return 'red';
+}
+
+function formatHours(h) {
+  if (h < 1) return `${Math.round(h * 60)}min`;
+  return `${Math.round(h * 10) / 10}h`;
+}
+
+function calcAvgOpenTime(tickets) {
+  if (!tickets.length) return null;
+  const total = tickets.reduce((acc, t) => acc + (Date.now() - new Date(t.created_at).getTime()), 0);
+  return total / tickets.length / 3600000;
 }
 
 /* ── SLA restante ──────────────────────────────────────────────────────────── */
@@ -206,6 +277,27 @@ function priorityLabel(p) {
   return `<span class="priority ${p || 'normal'}">${labels[p] || p || 'Normal'}</span>`;
 }
 
+/* ── Skeleton loading ──────────────────────────────────────────────────────── */
+function skeletonTableRows(cols, n) {
+  return Array.from({ length: n }, () =>
+    `<tr>${Array.from({ length: cols }, (_, i) =>
+      `<td><span class="skeleton" style="height:14px;width:${60 + (i * 17) % 40}%;display:block;"></span></td>`
+    ).join('')}</tr>`
+  ).join('');
+}
+
+function skeletonAgents(n) {
+  return Array.from({ length: n }, (_, i) => `
+    <div class="agent-item">
+      <span class="skeleton" style="width:36px;height:36px;border-radius:50%;display:block;flex-shrink:0;"></span>
+      <div class="agent-info" style="flex:1;">
+        <span class="skeleton" style="height:12px;width:${50 + i * 15}%;display:block;margin-bottom:6px;"></span>
+        <span class="skeleton" style="height:8px;width:${70 + i * 7}%;display:block;"></span>
+      </div>
+    </div>`
+  ).join('');
+}
+
 /* ── Renderizar KPIs ───────────────────────────────────────────────────────── */
 function renderKPIs(kpis) {
   const openEl = document.getElementById('kpi-open');
@@ -224,6 +316,19 @@ function renderKPIs(kpis) {
   const slaEl = document.getElementById('kpi-sla-risk');
   slaEl.textContent = kpis.slaAtRisk;
   slaEl.className = 'kpi-value' + (kpis.slaAtRisk > 0 ? ' danger' : ' ok');
+
+  const replyEl = document.getElementById('kpi-avg-reply');
+  replyEl.textContent = kpis.avgFirstReplyMinutes != null ? kpis.avgFirstReplyMinutes + 'min' : '—';
+  replyEl.className = 'kpi-value' + (kpis.avgFirstReplyMinutes != null && kpis.avgFirstReplyMinutes < 60 ? ' ok' : ' warn');
+
+  if (prevKPIs) {
+    renderTrend('kpi-open-trend',       kpis.open,                prevKPIs.open,                true);
+    renderTrend('kpi-unassigned-trend', kpis.unassigned,          prevKPIs.unassigned,          true);
+    renderTrend('kpi-solved-trend',     kpis.solvedToday,         prevKPIs.solvedToday,         false);
+    renderTrend('kpi-sla-trend',        kpis.slaAtRisk,           prevKPIs.slaAtRisk,           true);
+    renderTrend('kpi-reply-trend',      kpis.avgFirstReplyMinutes, prevKPIs.avgFirstReplyMinutes, true);
+  }
+  prevKPIs = { ...kpis };
 }
 
 /* ── Renderizar fila ───────────────────────────────────────────────────────── */
@@ -232,7 +337,12 @@ function renderQueue(tickets) {
   const tbody = document.getElementById('queue-body');
 
   if (!tickets.length) {
-    tbody.innerHTML = '<tr><td colspan="7" class="empty-state">Nenhum ticket aberto.</td></tr>';
+    tbody.innerHTML = `
+      <tr><td colspan="7" class="empty-state">
+        <div style="font-size:1.5rem;margin-bottom:0.4rem;">🎉</div>
+        <strong>Fila vazia!</strong>
+        <div style="font-size:0.78rem;color:var(--muted);margin-top:4px;">Nenhum ticket em aberto no momento.</div>
+      </td></tr>`;
     return;
   }
 
@@ -266,6 +376,7 @@ function renderAgents(agents) {
   container.innerHTML = agents.map(a => {
     const pct = Math.round((a.open_count / max) * 100);
     const initial = a.name.charAt(0).toUpperCase();
+    const fillCls = a.open_count === 0 ? 'agent-bar-fill ok' : 'agent-bar-fill';
     return `
       <div class="agent-item">
         <div class="agent-avatar">${initial}</div>
@@ -273,13 +384,51 @@ function renderAgents(agents) {
           <div class="agent-name">${escHtml(a.name)}</div>
           <div class="agent-bar-row">
             <div class="agent-bar-track">
-              <div class="agent-bar-fill" style="width:${pct}%"></div>
+              <div class="${fillCls}" style="width:${a.open_count === 0 ? '100' : pct}%"></div>
             </div>
-            <span class="agent-count">${a.open_count}</span>
+            <span class="agent-count">${a.open_count === 0 ? '<span style="color:var(--green);font-size:0.75rem;">livre</span>' : a.open_count}</span>
           </div>
         </div>
       </div>`;
   }).join('');
+}
+
+/* ── Histórico de busca ────────────────────────────────────────────────────── */
+function getHistory() {
+  try { return JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]'); } catch { return []; }
+}
+
+function saveToHistory(query) {
+  if (!query || query.length < 3) return;
+  let h = getHistory().filter(q => q !== query);
+  h.unshift(query);
+  h = h.slice(0, 8);
+  localStorage.setItem(HISTORY_KEY, JSON.stringify(h));
+}
+
+function renderHistoryDropdown() {
+  const dd = document.getElementById('search-history-dd');
+  const h = getHistory();
+  if (!h.length) { dd.style.display = 'none'; return; }
+  dd.innerHTML = `
+    <div class="search-history-header">
+      <span>Buscas recentes</span>
+      <span class="search-history-clear" onclick="clearSearchHistory()">Limpar</span>
+    </div>
+    ${h.map(q => `<div class="search-history-item" onclick="selectHistory(${JSON.stringify(q)})">${escHtml(q)}</div>`).join('')}`;
+  dd.style.display = 'block';
+}
+
+function clearSearchHistory() {
+  localStorage.removeItem(HISTORY_KEY);
+  document.getElementById('search-history-dd').style.display = 'none';
+}
+
+function selectHistory(query) {
+  const input = document.getElementById('search-input');
+  input.value = query;
+  document.getElementById('search-history-dd').style.display = 'none';
+  doSearch(query);
 }
 
 /* ── Algoritmo de similaridade ─────────────────────────────────────────────── */
@@ -305,8 +454,8 @@ function calcularSimilaridade(query, ticket) {
       'servidor':   ['aws', 'iis', 'cpu', 'lentidao', 'consumo'],
       'maquina':    ['estado', 'ociosa', 'parada', 'producao', 'coletor'],
       'viewer':     ['oee', 'divergencia', 'indicador', 'tv'],
-      'erro':       ['falha', 'error', 'bug', 'bo', 'crash', 'quebrou', 'tela_branca', '500', '404'],
-      'acesso':     ['login', 'senha', 'password', 'bloqueio', 'autenticacao', 'ad'],
+      'erro':       ['falha', 'error', 'bug', 'crash', 'quebrou', '500', '404'],
+      'acesso':     ['login', 'senha', 'password', 'bloqueio', 'autenticacao'],
       'lento':      ['lentidao', 'travando', 'demora', 'performance', 'pesado'],
       'email':      ['outlook', 'smtp', 'exchange', 'caixa', 'sincroniza'],
     };
@@ -334,6 +483,14 @@ function doSearch(queryOverride) {
     return;
   }
 
+  saveToHistory(query);
+  document.getElementById('search-history-dd').style.display = 'none';
+
+  if (!solvedBase.length) {
+    container.innerHTML = '<div class="empty-state">Base de resoluções ainda carregando. Aguarde um momento.</div>';
+    return;
+  }
+
   const scored = solvedBase
     .map(t => ({ ...t, score: calcularSimilaridade(query, t) }))
     .filter(t => t.score > 0)
@@ -341,12 +498,17 @@ function doSearch(queryOverride) {
     .slice(0, 5);
 
   if (!scored.length) {
-    container.innerHTML = '<div class="empty-state">Nenhum chamado similar encontrado. Tente outros termos.</div>';
+    container.innerHTML = `
+      <div class="empty-state">
+        <div style="font-size:1.2rem;margin-bottom:0.3rem;">🔍</div>
+        <strong>Nenhum chamado similar encontrado.</strong>
+        <div style="font-size:0.78rem;color:var(--muted);margin-top:4px;">Tente termos como "OEE", "agente", "integração", "banco" ou "lentidão".</div>
+      </div>`;
     return;
   }
 
   container.innerHTML = scored.map(t => {
-    const daysAgo = Math.round((Date.now() - new Date(t.solved_at).getTime()) / 86400000);
+    const daysAgoVal = Math.round((Date.now() - new Date(t.solved_at).getTime()) / 86400000);
     const resolution = t.resolution || '<em style="color:var(--muted)">Resolução não documentada</em>';
     const tags = (t.tags || []).map(tag => `<span class="tag">${escHtml(tag)}</span>`).join('');
     return `
@@ -361,15 +523,49 @@ function doSearch(queryOverride) {
             <div class="result-client">${escHtml(t.organization_name || '—')}</div>
           </div>
         </div>
-        <div class="result-meta">#${t.id} &nbsp;·&nbsp; Resolvido ${daysAgo}d atrás &nbsp;·&nbsp; Agente: ${escHtml(t.agent_name)}</div>
+        <div class="result-meta">#${t.id} &nbsp;·&nbsp; Resolvido ${daysAgoVal}d atrás &nbsp;·&nbsp; Agente: ${escHtml(t.agent_name)}</div>
         <div class="result-resolution">${escHtml(typeof resolution === 'string' ? resolution : '')}</div>
         ${tags ? `<div class="result-tags">${tags}</div>` : ''}
       </div>`;
   }).join('');
 }
 
-document.getElementById('search-input').addEventListener('keydown', e => {
-  if (e.key === 'Enter') doSearch();
+/* ── Eventos de busca ──────────────────────────────────────────────────────── */
+const searchInput = document.getElementById('search-input');
+
+searchInput.addEventListener('input', () => {
+  clearTimeout(searchDebounceTimer);
+  searchDebounceTimer = setTimeout(() => {
+    if (searchInput.value.trim().length > 2) doSearch();
+  }, 350);
+});
+
+searchInput.addEventListener('keydown', e => {
+  if (e.key === 'Enter') { clearTimeout(searchDebounceTimer); doSearch(); }
+  if (e.key === 'Escape') { document.getElementById('search-history-dd').style.display = 'none'; }
+});
+
+searchInput.addEventListener('focus', renderHistoryDropdown);
+
+document.addEventListener('click', e => {
+  if (!e.target.closest('.search-wrapper')) {
+    document.getElementById('search-history-dd').style.display = 'none';
+  }
+});
+
+/* ── Atalhos de teclado ────────────────────────────────────────────────────── */
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+  if (e.key === '/' || e.key === 'f' || e.key === 'F') {
+    e.preventDefault();
+    searchInput.focus();
+    searchInput.select();
+  }
+  if (e.key === 'Escape') closeModal();
+  if (e.key === 'r' || e.key === 'R') {
+    e.preventDefault();
+    loadData();
+  }
 });
 
 /* ── Modal ─────────────────────────────────────────────────────────────────── */
@@ -385,7 +581,6 @@ async function openModal(ticketId) {
     ` &nbsp;·&nbsp; ${ticket.status || '—'}` +
     ` &nbsp;·&nbsp; Canal: ${ticket.via?.channel || '—'}`;
 
-  // Meta grid
   const sla = slaLabel(ticket);
   document.getElementById('modal-meta').innerHTML = `
     <div class="meta-item"><div class="meta-label">Cliente</div><div class="meta-value">${escHtml(ticket.organization_name || '—')}</div></div>
@@ -396,11 +591,9 @@ async function openModal(ticketId) {
     <div class="meta-item"><div class="meta-label">Tags</div><div class="meta-value" style="display:flex;flex-wrap:wrap;gap:4px;margin-top:2px;">${(ticket.tags || []).map(t => `<span class="tag">${escHtml(t)}</span>`).join('')}</div></div>
   `;
 
-  // Resolução (campo customizado ou da base)
   const resSection = document.getElementById('modal-resolution');
   const resBox     = document.getElementById('modal-resolution-box');
-  const resolution = ticket.resolution
-    || (ticket.custom_fields || []).find(f => f.value)?.value;
+  const resolution = ticket.resolution || (ticket.custom_fields || []).find(f => f.value)?.value;
   if (resolution) {
     resBox.textContent = resolution;
     resSection.style.display = 'block';
@@ -408,7 +601,6 @@ async function openModal(ticketId) {
     resSection.style.display = 'none';
   }
 
-  // Comentários
   const conv = document.getElementById('modal-conversation');
   conv.innerHTML = '<div class="empty-state">Carregando conversa...</div>';
 
@@ -425,10 +617,8 @@ async function openModal(ticketId) {
 }
 
 async function openResolvedModal(ticketId) {
-  // Para tickets resolvidos da base
   const solved = solvedBase.find(t => t.id === ticketId);
   if (solved) {
-    // Criar objeto compatível com openModal
     const ticket = {
       id: solved.id,
       subject: solved.subject,
@@ -442,7 +632,6 @@ async function openResolvedModal(ticketId) {
       resolution: solved.resolution,
       sla_policy: null,
     };
-    // Encontrar agente pelo nome
     const agentMatch = agentsData.find(a => a.name === solved.agent_name);
     if (agentMatch) ticket.assignee_id = agentMatch.id;
 
@@ -519,6 +708,7 @@ async function loadStatus() {
 }
 
 async function loadData() {
+  setUpdating();
   try {
     const [ticketsRes, agentsRes, kpisRes] = await Promise.all([
       fetch('/api/tickets/open'),
@@ -537,8 +727,10 @@ async function loadData() {
     renderKPIs(kpisData);
     renderQueue(openTickets);
     renderAgents(agentsData);
+    setUpdated();
   } catch (err) {
     console.error('Erro ao carregar dados:', err);
+    document.getElementById('update-ts').textContent = 'Erro ao atualizar';
   }
 }
 
@@ -557,15 +749,16 @@ async function loadSolved() {
 /* ── Init ──────────────────────────────────────────────────────────────────── */
 async function init() {
   startClock();
+  document.getElementById('queue-body').innerHTML = skeletonTableRows(7, 4);
+  document.getElementById('agent-list').innerHTML = skeletonAgents(3);
+
   await loadStatus();
   await Promise.all([loadData(), loadSolved()]);
 
-  // Refresh automático silencioso
   const ttl = 5 * 60 * 1000;
   setInterval(loadData, ttl);
   setInterval(loadSolved, CACHE_SOLVED_TTL);
 
-  // Atualizar tempos abertos a cada 30s (sem buscar API)
   setInterval(() => {
     if (openTickets.length) renderQueue(openTickets);
   }, 30000);
