@@ -224,6 +224,7 @@ let agentsData      = [];
 let clientFilter    = null;
 let activeFilter    = 'all';
 let activePriorityFilter = null;
+let activeTagFilter = null;
 let prevKPIs        = null;
 
 /* ── Utilitários ───────────────────────────────────────────────────────────── */
@@ -430,6 +431,9 @@ function toggleClientFilter(name) {
   clientFilter = clientFilter === name ? null : name;
   document.getElementById('client-reset').style.display = clientFilter ? 'inline' : 'none';
   renderAll();
+  if (clientFilter) {
+    document.querySelector('.card:has(#critical-body)').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
 }
 
 function clearClientFilter() {
@@ -543,6 +547,16 @@ function clearPriorityFilter() {
   renderCriticalTickets(openTickets);
 }
 
+function toggleTagFilter(tag) {
+  activeTagFilter = activeTagFilter === tag ? null : tag;
+  const solvedPeriod = filterByPeriod(solvedBase, period);
+  renderRecurringTags(solvedPeriod);
+  renderCriticalTickets(openTickets);
+  if (activeTagFilter) {
+    document.querySelector('.card:has(#critical-body)').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+}
+
 /* ── Problemas recorrentes ────────────────────────────────────────────────── */
 function renderRecurringTags(solved) {
   const container = document.getElementById('recurring-tags');
@@ -562,10 +576,11 @@ function renderRecurringTags(solved) {
   container.innerHTML = sorted.map(([tag, count]) => {
     const pct = Math.round((count / max) * 100);
     const isHigh = count > 3;
-    const barColor = isHigh ? 'var(--red)' : 'var(--blue)';
+    const isActive = activeTagFilter === tag;
+    const barColor = isActive ? 'var(--blue)' : (isHigh ? 'var(--red)' : 'var(--blue)');
     const countColor = isHigh ? 'var(--red)' : 'var(--text)';
     return `
-      <div class="client-bar-item" style="cursor:default;">
+      <div class="client-bar-item${isActive ? ' active' : ''}" onclick="toggleTagFilter('${escHtml(tag)}')" title="Filtrar tickets com tag '${escHtml(tag)}'">
         <span class="client-name" style="${isHigh ? 'color:var(--red);font-weight:600;' : ''}">${escHtml(tag)}</span>
         <div class="client-bar-track">
           <div class="client-bar-fill" style="width:${pct}%;background:${barColor};"></div>
@@ -644,6 +659,10 @@ function renderCriticalTickets(tickets) {
     filtered = filtered.filter(t => t.priority === activePriorityFilter);
   }
 
+  if (activeTagFilter) {
+    filtered = filtered.filter(t => (t.tags || []).includes(activeTagFilter));
+  }
+
   const filterLabels = {
     'all': 'Todos os tickets',
     'sla-risk': 'SLA em risco',
@@ -691,12 +710,15 @@ function renderCriticalTickets(tickets) {
   const body = document.getElementById('critical-body');
 
   if (!filtered.length) {
+    const tagSuffix = activeTagFilter ? ` com a tag <strong>${escHtml(activeTagFilter)}</strong>` : '';
     const emptyMessages = {
-      'sla-risk':   '✓ Nenhum ticket com SLA em risco. Boa operação!',
-      'sla-breach': '✓ Nenhum SLA violado no momento.',
-      'no-agent':   '✓ Todos os tickets estão atribuídos.',
-      'old':        '✓ Nenhum ticket com mais de 3 dias em aberto.',
-      'all':        clientFilter ? `Nenhum ticket aberto para ${escHtml(clientFilter)}.` : 'Nenhum ticket aberto.',
+      'sla-risk':   `✓ Nenhum ticket com SLA em risco${tagSuffix}.`,
+      'sla-breach': `✓ Nenhum SLA violado${tagSuffix}.`,
+      'no-agent':   `✓ Todos os tickets${tagSuffix} estão atribuídos.`,
+      'old':        `✓ Nenhum ticket${tagSuffix} com mais de 3 dias em aberto.`,
+      'all':        activeTagFilter
+        ? `Nenhum ticket aberto com a tag <strong>${escHtml(activeTagFilter)}</strong>.`
+        : (clientFilter ? `Nenhum ticket aberto para ${escHtml(clientFilter)}.` : 'Nenhum ticket aberto.'),
     };
     body.innerHTML = `<tr><td colspan="7" class="empty-state">${emptyMessages[activeFilter] || 'Nenhum ticket encontrado.'}</td></tr>`;
     return;
@@ -726,7 +748,7 @@ function renderCriticalTickets(tickets) {
 function renderAll() {
   const solvedPeriod = filterByPeriod(solvedBase, period);
   renderClientVolume(openTickets);
-  renderRecurringTags(solvedPeriod);
+  renderRecurringTags(solvedPeriod); // re-render para refletir activeTagFilter atual
   renderTimeDistribution(clientFilter ? openTickets.filter(t => t.organization_name === clientFilter) : openTickets);
   renderSLAStatus(clientFilter ? openTickets.filter(t => t.organization_name === clientFilter) : openTickets);
   renderPriorityDist(openTickets);

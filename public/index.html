@@ -415,7 +415,7 @@ function renderHistoryDropdown() {
       <span>Buscas recentes</span>
       <span class="search-history-clear" onclick="clearSearchHistory()">Limpar</span>
     </div>
-    ${h.map(q => `<div class="search-history-item" onclick="selectHistory(${JSON.stringify(escHtml(q))})">${escHtml(q)}</div>`).join('')}`;
+    ${h.map(q => `<div class="search-history-item" onclick="selectHistory(${JSON.stringify(q)})">${escHtml(q)}</div>`).join('')}`;
   dd.style.display = 'block';
 }
 
