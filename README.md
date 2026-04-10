@@ -1,17 +1,20 @@
-# SKA Zendesk Dashboard
+# Zendesk Support Dashboard
 
-Dashboard interno de suporte para a equipe SKA (DirectaMES). Consome a API do Zendesk e exibe os dados em tempo real em duas visões: operacional (N1) e gerencial.
+Dashboard de suporte construído sobre a API do Zendesk, com duas visões distintas: **operacional** (para agentes N1) e **gerencial** (para supervisores). Desenvolvido como solução alternativa à interface padrão do Zendesk, com foco em usabilidade real no dia a dia de uma equipe de suporte.
+
+> Funciona em **modo MOCK** sem nenhuma credencial, ideal para explorar localmente.
 
 ---
 
-## O problema que resolve
+## Motivação
 
-A equipe de suporte da SKA usa o Zendesk para gerenciar chamados, mas a interface padrão do Zendesk não oferece:
-- Visão consolidada da fila em tempo real
-- Busca por chamados similares já resolvidos
-- Indicadores gerenciais (SLA, CSAT, desempenho por agente, base de conhecimento)
+A interface padrão do Zendesk cumpre seu papel, mas apresenta limitações de UX que dificultam o trabalho no dia a dia:
 
-Este dashboard preenche essa lacuna com uma interface focada no fluxo de trabalho real da equipe.
+- A fila de tickets não oferece uma visão consolidada e de fácil leitura em tempo real
+- Encontrar chamados similares já resolvidos exige navegação manual e pouco intuitiva
+- Indicadores gerenciais como SLA, CSAT e desempenho por agente ficam dispersos em relatórios separados
+
+Este projeto é uma tentativa de reimaginar essa visualização, priorizando clareza, fluxo de trabalho e acesso rápido à informação que a equipe já usa no Zendesk, só que de forma mais acessível.
 
 ---
 
@@ -32,40 +35,20 @@ O servidor detecta automaticamente o modo de operação:
 
 ---
 
-## Instalação
+## Rodando localmente
 
 **Pré-requisito:** Node.js 18+
 
 ```bash
-cd zendesk-dashboard-prototype
+git clone https://github.com/seu-usuario/zendesk-dashboard
+cd zendesk-dashboard
 npm install
 npm start
 ```
 
 Acesse:
-- **N1:** http://localhost:3000/
-- **Gerencial:** http://localhost:3000/gerencial.html
-
-Para desenvolvimento com hot-reload:
-```bash
-npm run dev
-```
-
----
-
-## Conectar ao Zendesk real
-
-Crie um arquivo `.env` na raiz do projeto:
-
-```env
-ZENDESK_SUBDOMAIN=skasuporte
-ZENDESK_EMAIL=seu-email@ska.com.br
-ZENDESK_TOKEN=seu_token_aqui
-```
-
-Para gerar o token: **Zendesk Admin → Apps e Integrações → APIs → Adicionar token de API**
-
-Após reiniciar o servidor, o badge no header muda de **MOCK** (laranja) para **LIVE** (verde).
+- **Visão N1 (agentes):** http://localhost:3000/
+- **Visão Gerencial:** http://localhost:3000/gerencial.html
 
 ---
 
@@ -117,16 +100,6 @@ Tabela com todos os tickets abertos, ordenados por data. Clique no assunto para 
 
 Barra proporcional por agente. Agentes sem tickets aparecem em **verde** com label "livre".
 
-### Atalhos de teclado
-
-| Tecla | Ação |
-|-------|------|
-| `/` | Focar campo de busca |
-| `Esc` | Fechar modal |
-| `R` | Atualizar dados manualmente |
-
-**Atualização automática:** dados a cada 5 min · tempos recalculados localmente a cada 30s
-
 ---
 
 ## Visão Gerencial — Supervisores
@@ -166,15 +139,6 @@ Seletor de período no header: **7 / 30 / 90 dias** (afeta KPIs do período e ta
 - **Desempenho da Equipe** — por agente: resolvidos, tempo médio de resolução, tempo médio de 1ª resposta, ticket mais antigo em aberto
 - **Tickets Críticos** — filtros rápidos: Todos / SLA em risco / SLA violado / Sem agente / Mais de 3 dias
 
-### Atalhos de teclado
-
-| Tecla | Ação |
-|-------|------|
-| `R` | Atualizar dados |
-| `7` | Período 7 dias |
-| `3` | Período 30 dias |
-| `9` | Período 90 dias |
-
 ---
 
 ## Como documentar resoluções no Zendesk
@@ -203,8 +167,12 @@ Adicione uma nota interna com:
 
 | Variável | Obrigatória | Padrão | Descrição |
 |----------|-------------|--------|-----------|
-| `ZENDESK_SUBDOMAIN` | Sim (LIVE) | `skasuporte` | Subdomínio da conta |
+| `ZENDESK_SUBDOMAIN` | Sim (LIVE) | `suporte` | Subdomínio da conta |
 | `ZENDESK_EMAIL` | Sim (LIVE) | — | E-mail do usuário de API |
 | `ZENDESK_TOKEN` | Sim (LIVE) | — | Token de API gerado no Zendesk |
 | `REFRESH_INTERVAL_MINUTES` | Não | `5` | TTL do cache em minutos |
 | `PORT` | Não | `3000` | Porta HTTP do servidor |
+
+## Licença
+
+MIT
